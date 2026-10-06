@@ -1,17 +1,12 @@
-import { Text, View, StyleSheet } from "react-native";
+import { View, Text, Button } from "react-native";
+import { useState } from "react";
 
-export default function Index() {
+export default function Home() {
+  const [count, setCount] = useState(0);
   return (
-    <View style={styles.container}>
-      <Text>Edit src/app/index.tsx to edit this screen.</Text>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text style={{ fontSize: 24 }}>Đã bấm: {count}</Text>
+      <Button title="Bấm tôi" onPress={() => setCount(count + 1)} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
