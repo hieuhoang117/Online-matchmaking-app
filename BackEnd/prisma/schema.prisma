@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model admins {
+  adminID      String  @id @db.VarChar(36)
+  username     String  @unique(map: "username") @db.VarChar(50)
+  passwordHash String  @db.VarChar(255)
+  role         String? @default("admin") @db.VarChar(50)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model blocks {
+  blockID                       String  @id @db.VarChar(36)
+  blockerID                     String  @db.VarChar(36)
+  blockedID                     String  @db.VarChar(36)
+  createdAt                     String? @db.VarChar(50)
+  users_blocks_blockerIDTousers users   @relation("blocks_blockerIDTousers", fields: [blockerID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "blocks_ibfk_1")
+  users_blocks_blockedIDTousers users   @relation("blocks_blockedIDTousers", fields: [blockedID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "blocks_ibfk_2")
+
+  @@index([blockedID], map: "blockedID")
+  @@index([blockerID], map: "blockerID")
+}
+
+model interests {
+  interestIS     String           @id @db.VarChar(36)
+  name           String           @db.VarChar(100)
+  user_interests user_interests[]
+}
+
+model matches {
+  matchID                      String     @id @db.VarChar(36)
+  user1ID                      String     @db.VarChar(36)
+  user2ID                      String     @db.VarChar(36)
+  matchedAt                    DateTime?  @default(now()) @db.DateTime(0)
+  users_matches_user1IDTousers users      @relation("matches_user1IDTousers", fields: [user1ID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "matches_ibfk_1")
+  users_matches_user2IDTousers users      @relation("matches_user2IDTousers", fields: [user2ID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "matches_ibfk_2")
+  messages                     messages[]
+
+  @@index([user1ID], map: "user1ID")
+  @@index([user2ID], map: "user2ID")
+}
+
+model messages {
+  messssageID String    @id @db.VarChar(36)
+  matchID     String    @db.VarChar(36)
+  senderID    String    @db.VarChar(36)
+  content     String    @db.Text
+  sentAt      DateTime? @default(now()) @db.DateTime(0)
+  matches     matches   @relation(fields: [matchID], references: [matchID], onDelete: Cascade, onUpdate: NoAction, map: "messages_ibfk_1")
+  users       users     @relation(fields: [senderID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "messages_ibfk_2")
+
+  @@index([matchID], map: "matchID")
+  @@index([senderID], map: "senderID")
+}
+
+model notifications {
+  notificationID String   @id @db.VarChar(36)
+  recipientID    String   @db.VarChar(36)
+  title          String   @db.VarChar(150)
+  content        String   @db.Text
+  attribute      String?  @db.VarChar(100)
+  isRead         Boolean? @default(false)
+}
+
+model profile_photos {
+  photoID  String   @id @db.VarChar(36)
+  userId   String   @db.VarChar(36)
+  photoURL String   @db.VarChar(255)
+  isAvatar Boolean? @default(false)
+  users    users    @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "profile_photos_ibfk_1")
+
+  @@index([userId], map: "userId")
+}
+
+model reports {
+  reportID                            String    @id @db.VarChar(36)
+  reporterID                          String    @db.VarChar(36)
+  reportedUserID                      String    @db.VarChar(36)
+  reason                              String    @db.Text
+  status                              String?   @default("pending") @db.VarChar(50)
+  createdAt                           DateTime? @default(now()) @db.DateTime(0)
+  users_reports_reporterIDTousers     users     @relation("reports_reporterIDTousers", fields: [reporterID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "reports_ibfk_1")
+  users_reports_reportedUserIDTousers users     @relation("reports_reportedUserIDTousers", fields: [reportedUserID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "reports_ibfk_2")
+
+  @@index([reportedUserID], map: "reportedUserID")
+  @@index([reporterID], map: "reporterID")
+}
+
+model swipes {
+  swipeID                          String    @id @db.VarChar(36)
+  sourceUserId                     String    @db.VarChar(36)
+  targetUserId                     String    @db.VarChar(36)
+  actionType                       String    @db.VarChar(20)
+  createdAt                        DateTime? @default(now()) @db.DateTime(0)
+  users_swipes_sourceUserIdTousers users     @relation("swipes_sourceUserIdTousers", fields: [sourceUserId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "swipes_ibfk_1")
+  users_swipes_targetUserIdTousers users     @relation("swipes_targetUserIdTousers", fields: [targetUserId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "swipes_ibfk_2")
+
+  @@index([sourceUserId], map: "sourceUserId")
+  @@index([targetUserId], map: "targetUserId")
+}
+
+model user_interests {
+  userId     String    @db.VarChar(36)
+  interestIS String    @db.VarChar(36)
+  users      users     @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "user_interests_ibfk_1")
+  interests  interests @relation(fields: [interestIS], references: [interestIS], onDelete: Cascade, onUpdate: NoAction, map: "user_interests_ibfk_2")
+
+  @@id([userId, interestIS])
+  @@index([interestIS], map: "interestIS")
+}
+
+model users {
+  userId                                String           @id @db.VarChar(36)
+  phoneNumber                           String?          @unique(map: "phoneNumber") @db.VarChar(20)
+  email                                 String           @unique(map: "email") @db.VarChar(100)
+  passwordHash                          String           @db.VarChar(255)
+  dateOfBirth                           String?          @db.VarChar(20)
+  gender                                String?          @db.VarChar(20)
+  targetGender                          String?          @db.VarChar(20)
+  bio                                   String?          @db.Text
+  status                                String?          @default("active") @db.VarChar(50)
+  blocks_blocks_blockerIDTousers        blocks[]         @relation("blocks_blockerIDTousers")
+  blocks_blocks_blockedIDTousers        blocks[]         @relation("blocks_blockedIDTousers")
+  matches_matches_user1IDTousers        matches[]        @relation("matches_user1IDTousers")
+  matches_matches_user2IDTousers        matches[]        @relation("matches_user2IDTousers")
+  messages                              messages[]
+  profile_photos                        profile_photos[]
+  reports_reports_reporterIDTousers     reports[]        @relation("reports_reporterIDTousers")
+  reports_reports_reportedUserIDTousers reports[]        @relation("reports_reportedUserIDTousers")
+  swipes_swipes_sourceUserIdTousers     swipes[]         @relation("swipes_sourceUserIdTousers")
+  swipes_swipes_targetUserIdTousers     swipes[]         @relation("swipes_targetUserIdTousers")
+  user_interests                        user_interests[]
+}
