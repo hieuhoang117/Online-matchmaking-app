@@ -136,3 +136,20 @@ model users {
   swipes_swipes_targetUserIdTousers     swipes[]         @relation("swipes_targetUserIdTousers")
   user_interests                        user_interests[]
 }
+
+model refresh_tokens {
+  tokenId     String                     @id @db.VarChar(36)
+  accountId   String                     @db.VarChar(36)
+  accountType refresh_tokens_accountType
+  tokenHash   String                     @unique(map: "tokenHash") @db.Char(64)
+  expiresAt   DateTime                   @db.DateTime(0)
+  revokedAt   DateTime?                  @db.DateTime(0)
+  createdAt   DateTime?                  @default(now()) @db.DateTime(0)
+
+  @@index([accountId, accountType], map: "idx_refresh_account")
+}
+
+enum refresh_tokens_accountType {
+  user
+  admin
+}
