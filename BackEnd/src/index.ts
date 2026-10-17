@@ -3,6 +3,7 @@ import { Server } from 'socket.io';
 import type { AuthUser } from './utils/jwt.js';
 import { verifyAccessToken } from './utils/jwt.js';
 import app from './app.js';
+import redis from './config/redis.js';
 
 interface ClientToServerEvents {
   'ping-server': () => void;
@@ -68,6 +69,18 @@ io.on('connection', (socket) => {
 
 const PORT = Number(process.env.PORT) || 4000;
 
-httpServer.listen(PORT, () => {
+const startServer = async (): Promise<void> => {
+  try {
+    await redis.connect();
+    console.log('Redis đã kết nối thành công');
+
+    httpServer.listen(PORT, () => {
   console.log(`Server chạy tại http://localhost:${PORT}`);
 });
+  } catch (error) {
+    console.error('Không thể kết nối Redis:', error);
+    process.exit(1);
+  }
+};
+
+void startServer();
