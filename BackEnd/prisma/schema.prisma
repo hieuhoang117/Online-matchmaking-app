@@ -46,16 +46,16 @@ model matches {
 }
 
 model messages {
-  messssageID String    @id @db.VarChar(36)
-  matchID     String    @db.VarChar(36)
-  senderID    String    @db.VarChar(36)
-  content     String    @db.Text
-  sentAt      DateTime? @default(now()) @db.DateTime(0)
-  matches     matches   @relation(fields: [matchID], references: [matchID], onDelete: Cascade, onUpdate: NoAction, map: "messages_ibfk_1")
-  users       users     @relation(fields: [senderID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "messages_ibfk_2")
+  messageID String    @id @db.VarChar(36)
+  matchID   String    @db.VarChar(36)
+  senderID  String    @db.VarChar(36)
+  content   String    @db.Text
+  sentAt    DateTime? @default(now()) @db.DateTime(0)
+  matches   matches   @relation(fields: [matchID], references: [matchID], onDelete: Cascade, onUpdate: NoAction, map: "messages_ibfk_1")
+  users     users     @relation(fields: [senderID], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "messages_ibfk_2")
 
-  @@index([matchID], map: "matchID")
   @@index([senderID], map: "senderID")
+  @@index([matchID, sentAt], map: "idx_messages_match_time")
 }
 
 model notifications {

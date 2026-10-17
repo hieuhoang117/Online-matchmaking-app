@@ -208,22 +208,17 @@ END//
 USE dating_app_db;
 
 CREATE TABLE refresh_tokens (
-    id          CHAR(36)     NOT NULL DEFAULT (UUID()),
-    user_id     VARCHAR(36)  NOT NULL,
-    token_hash  CHAR(64)     NOT NULL,
-    expires_at  DATETIME     NOT NULL,
-    revoked_at  DATETIME     NULL,
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_refresh_token_hash (token_hash),
-    KEY idx_refresh_user (user_id),
-
-    CONSTRAINT fk_refresh_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(userId)
-        ON DELETE CASCADE
+    tokenId     VARCHAR(36) PRIMARY KEY,
+    accountId   VARCHAR(36) NOT NULL,
+    accountType ENUM('user','admin') NOT NULL,
+    tokenHash   CHAR(64)    NOT NULL UNIQUE,
+    expiresAt   DATETIME    NOT NULL,
+    revokedAt   DATETIME    NULL,
+    createdAt   DATETIME    DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_refresh_account (accountId, accountType)
 );
+
+ALTER TABLE messages RENAME COLUMN messssageID TO messageID;
+CREATE INDEX idx_messages_match_time ON messages (matchID, sentAt);
 
 DELIMITER ;
