@@ -3,8 +3,6 @@ import * as authService from '../services/authService.js';
 import { HttpError } from '../utils/httpError.js';
 import { AuthRequest } from '../middlewares/authMiddleware.js';
 
-const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
-
 const sendError = (res: Response, error: unknown) => {
   if (error instanceof HttpError) {
     return res.status(error.status).json({ message: error.message });
@@ -16,18 +14,32 @@ const sendError = (res: Response, error: unknown) => {
 export const register = async (req: Request, res: Response) => {
   try {
     const b = req.body ?? {};
-    if (typeof b.email !== 'string' || typeof b.password !== 'string') {
-      return res.status(400).json({ message: 'Thiếu email hoặc mật khẩu' });
+    if (
+      typeof b.email !== 'string' ||
+      typeof b.password !== 'string' ||
+      typeof b.dateOfBirth !== 'string'
+    ) {
+      return res.status(400).json({ message: 'Thiếu email, mật khẩu hoặc ngày sinh' });
     }
-    const data = await authService.register({
+    const data = await authService.requestRegisterOtp({
       email: b.email,
       password: b.password,
-      phoneNumber: str(b.phoneNumber),
-      dateOfBirth: str(b.dateOfBirth),
-      gender: str(b.gender),
-      targetGender: str(b.targetGender),
-      bio: str(b.bio),
+      dateOfBirth: b.dateOfBirth,
     });
+    res.status(202).json({ message: 'Đã gửi OTP đến email', data });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const verifyRegisterOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body ?? {};
+    if (typeof email !== 'string' || typeof otp !== 'string') {
+      return res.status(400).json({ message: 'Thiếu email hoặc OTP' });
+    }
+
+    const data = await authService.verifyRegisterOtp(email, otp);
     res.status(201).json({ message: 'Đăng ký thành công', data });
   } catch (error) {
     sendError(res, error);

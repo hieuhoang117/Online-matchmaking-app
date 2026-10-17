@@ -1,7 +1,9 @@
 import bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import prisma from '../config/db.js';
 import { env } from '../config/env.js';
+import redis from '../config/redis.js';
+import { sendRegistrationOtp } from '../config/mailer.js';
 import { HttpError } from '../utils/httpError.js';
 import { AuthUser, Role, signAccessToken, generateRefreshToken, hashToken } from '../utils/jwt.js';
 
@@ -12,12 +14,6 @@ const MIN_AGE = 18;
 
 // Hash giả để thời gian phản hồi giống nhau dù email có tồn tại hay không
 const DUMMY_HASH = bcrypt.hashSync('dummy-password', 10);
-
-// ---------- Hàm phụ ----------
-const clean = (v?: string): string | null => {
-  const t = v?.trim();
-  return t ? t : null; // chuỗi rỗng -> null, tránh trùng UNIQUE của phoneNumber
-};
 
 const isAdult = (dob: string): boolean => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return false;
@@ -74,17 +70,31 @@ const loadAccount = async (accountId: string, type: Role): Promise<AuthUser | nu
 export interface RegisterInput {
   email: string;
   password: string;
-  phoneNumber?: string;
-  dateOfBirth?: string; // YYYY-MM-DD
-  gender?: string;
-  targetGender?: string;
-  bio?: string;
+  dateOfBirth: string; // YYYY-MM-DD
 }
 
-export const register = async (input: RegisterInput) => {
+interface PreparedRegistration {
+  email: string;
+  passwordHash: string;
+  dateOfBirth: string;
+}
+
+interface PendingRegistration {
+  registration: PreparedRegistration;
+  otpHash: string;
+}
+
+const OTP_TTL_SECONDS = 5 * 60;
+const OTP_RESEND_SECONDS = 60;
+const MAX_OTP_ATTEMPTS = 5;
+
+const registrationOtpKey = (email: string) => `register:otp:${email}`;
+const registrationAttemptsKey = (email: string) => `register:otp:attempts:${email}`;
+const registrationCooldownKey = (email: string) => `register:otp:cooldown:${email}`;
+
+const prepareRegistration = async (input: RegisterInput): Promise<PreparedRegistration> => {
   const email = input.email.trim().toLowerCase();
-  const phoneNumber = clean(input.phoneNumber);
-  const dateOfBirth = clean(input.dateOfBirth);
+  const dateOfBirth = input.dateOfBirth.trim();
 
   if (email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new HttpError(400, 'Email không hợp lệ');
@@ -92,35 +102,91 @@ export const register = async (input: RegisterInput) => {
   if (input.password.length < MIN_PASSWORD || input.password.length > MAX_PASSWORD) {
     throw new HttpError(400, `Mật khẩu phải từ ${MIN_PASSWORD} đến ${MAX_PASSWORD} ký tự`);
   }
-  if (phoneNumber && phoneNumber.length > 20) {
-    throw new HttpError(400, 'Số điện thoại không hợp lệ');
-  }
-  if (dateOfBirth && !isAdult(dateOfBirth)) {
+  if (!isAdult(dateOfBirth)) {
     throw new HttpError(400, `Ngày sinh không hợp lệ hoặc chưa đủ ${MIN_AGE} tuổi`);
   }
 
+  const existingEmail = await prisma.users.findUnique({ where: { email } });
+  if (existingEmail) {
+    throw new HttpError(409, 'Email đã được sử dụng');
+  }
+
+  return {
+    email,
+    passwordHash: await bcrypt.hash(input.password, 10),
+    dateOfBirth,
+  };
+};
+
+const createRegisteredUser = async (registration: PreparedRegistration) => {
   const user = await prisma.users
-    .create({
-      data: {
-        userId: randomUUID(),
-        email,
-        passwordHash: await bcrypt.hash(input.password, 10),
-        phoneNumber,
-        dateOfBirth,
-        gender: clean(input.gender),
-        targetGender: clean(input.targetGender),
-        bio: clean(input.bio),
-      },
-    })
+    .create({ data: { userId: randomUUID(), ...registration } })
     .catch((error: unknown) => {
       if ((error as { code?: string }).code === 'P2002') {
-        throw new HttpError(409, 'Email hoặc số điện thoại đã được sử dụng');
+        throw new HttpError(409, 'Email đã được sử dụng');
       }
       throw error;
     });
 
   const tokens = await issueTokens({ id: user.userId, role: 'user' });
   return { user: publicUser(user), ...tokens };
+};
+
+export const requestRegisterOtp = async (input: RegisterInput) => {
+  const registration = await prepareRegistration(input);
+  const email = registration.email;
+  const cooldownKey = registrationCooldownKey(email);
+  const cooldownSet = await redis.set(cooldownKey, '1', { NX: true, EX: OTP_RESEND_SECONDS });
+
+  if (cooldownSet !== 'OK') {
+    throw new HttpError(429, 'Vui lòng chờ trước khi yêu cầu gửi lại OTP');
+  }
+
+  const otp = randomInt(100000, 1000000).toString();
+  const pending: PendingRegistration = {
+    registration,
+    otpHash: createHash('sha256').update(otp).digest('hex'),
+  };
+  const otpKey = registrationOtpKey(email);
+  const attemptsKey = registrationAttemptsKey(email);
+
+  try {
+    await redis.set(otpKey, JSON.stringify(pending), { EX: OTP_TTL_SECONDS });
+    await redis.set(attemptsKey, '0', { EX: OTP_TTL_SECONDS });
+    await sendRegistrationOtp(email, otp);
+  } catch (error) {
+    await Promise.all([redis.del(otpKey), redis.del(attemptsKey), redis.del(cooldownKey)]);
+    throw error;
+  }
+
+  return { email };
+};
+
+export const verifyRegisterOtp = async (emailInput: string, otp: string) => {
+  const email = emailInput.trim().toLowerCase();
+  const otpKey = registrationOtpKey(email);
+  const attemptsKey = registrationAttemptsKey(email);
+  const cooldownKey = registrationCooldownKey(email);
+  const pendingValue = await redis.get(otpKey);
+
+  if (!pendingValue) throw new HttpError(400, 'OTP không hợp lệ hoặc đã hết hạn');
+  if (!/^\d{6}$/.test(otp)) throw new HttpError(400, 'OTP phải gồm 6 chữ số');
+
+  const attempts = await redis.incr(attemptsKey);
+  if (attempts > MAX_OTP_ATTEMPTS) {
+    await Promise.all([redis.del(otpKey), redis.del(attemptsKey), redis.del(cooldownKey)]);
+    throw new HttpError(429, 'Bạn đã nhập sai OTP quá số lần cho phép');
+  }
+
+  const pending = JSON.parse(pendingValue) as PendingRegistration;
+  const submittedHash = createHash('sha256').update(otp).digest();
+  const expectedHash = Buffer.from(pending.otpHash, 'hex');
+  if (!timingSafeEqual(submittedHash, expectedHash)) {
+    throw new HttpError(400, 'OTP không chính xác');
+  }
+
+  await Promise.all([redis.del(otpKey), redis.del(attemptsKey), redis.del(cooldownKey)]);
+  return createRegisteredUser(pending.registration);
 };
 
 // ---------- Đăng nhập ----------
