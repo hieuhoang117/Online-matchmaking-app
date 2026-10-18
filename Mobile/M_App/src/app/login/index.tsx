@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import axios from 'axios';
+import { useAuth } from '../../context/authContext';
 import {
 	KeyboardAvoidingView,
 	Platform,
@@ -13,6 +16,38 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
 	const [showPassword, setShowPassword] = useState(false);
+	const [email, setEmail] = useState('');
+	const [password, setPassword] = useState('');
+	const [errorMessage, setErrorMessage] = useState('');
+	const [isLoading, setIsLoading] = useState(false);
+	const router = useRouter();
+	const { isLoggedIn, isInitializing, login } = useAuth();
+
+	useEffect(() => {
+		if (!isInitializing && isLoggedIn) router.replace('/mainscreen');
+	}, [isInitializing, isLoggedIn, router]);
+
+	const handleLogin = async (): Promise<void> => {
+		const normalizedEmail = email.trim().toLowerCase();
+		if (!normalizedEmail || !password) {
+			setErrorMessage('Vui lòng nhập email và mật khẩu.');
+			return;
+		}
+
+		setErrorMessage('');
+		setIsLoading(true);
+		try {
+			await login(normalizedEmail, password);
+			router.replace('/mainscreen');
+		} catch (error) {
+			const message = axios.isAxiosError<{ message?: string }>(error)
+				? error.response?.data?.message ?? 'Không thể kết nối tới máy chủ.'
+				: 'Đã xảy ra lỗi. Vui lòng thử lại.';
+			setErrorMessage(message);
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
@@ -49,6 +84,8 @@ export default function LoginScreen() {
 									keyboardType="email-address"
 									autoCapitalize="none"
 									autoCorrect={false}
+									value={email}
+									onChangeText={setEmail}
 								/>
 							</View>
 
@@ -63,6 +100,8 @@ export default function LoginScreen() {
 									placeholderTextColor="#B9A8B0"
 									secureTextEntry={!showPassword}
 									autoCapitalize="none"
+									value={password}
+									onChangeText={setPassword}
 								/>
 								<Pressable
 									accessibilityRole="button"
@@ -74,12 +113,16 @@ export default function LoginScreen() {
 								</Pressable>
 							</View>
 
+							{errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
 							<Pressable accessibilityRole="button" style={styles.forgotButton}>
 								<Text style={styles.forgotText}>Forgot Password?</Text>
 							</Pressable>
 
-							<Pressable accessibilityRole="button" style={styles.loginButton}>
-								<Text style={styles.loginButtonText}>Log In</Text>
+							<Pressable accessibilityRole="button" style={styles.loginButton}
+								onPress={handleLogin}
+								disabled={isLoading}>
+								<Text style={styles.loginButtonText}>{isLoading ? 'Signing in...' : 'Log In'}</Text>
 								<Text style={styles.loginHeart}>♡</Text>
 							</Pressable>
 
@@ -205,6 +248,12 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		marginBottom: 7,
 		marginLeft: 4,
+	},
+	errorText: {
+		color: '#B9254C',
+		fontSize: 12,
+		marginTop: 8,
+		marginHorizontal: 4,
 	},
 	inputWrap: {
 		minHeight: 48,

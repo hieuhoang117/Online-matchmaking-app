@@ -27,7 +27,7 @@ const io = new Server<
   SocketData
 >(httpServer, {
   cors: {
-    origin: ['http://localhost:8081'], // thay bằng origin web của bạn nếu có
+    origin: ['http://localhost:8081'], 
   },
 });
 
