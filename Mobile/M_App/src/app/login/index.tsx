@@ -133,9 +133,19 @@ export default function LoginScreen() {
 								<Text style={styles.matchSparkles}>✦ ♥ ✦</Text>
 								<Text style={styles.matchText}>Over 2.4M singles matching today</Text>
 							</View>
-							<Text style={styles.signupText}>
-								Don&apos;t have an account? <Text style={styles.signupLink}>Sign up</Text>
-							</Text>
+
+							<View style={styles.signupRow}>
+								<Text style={styles.signupText}>Don&apos;t have an account?</Text>
+								<Pressable
+									accessibilityRole="button"
+									accessibilityLabel="Sign up"
+									onPress={() => router.replace('/login/register')}
+								>
+									<Text style={styles.signupLink}>Sign up</Text>
+								</Pressable>
+							</View>
+
+
 						</View>
 					</View>
 				</ScrollView>
@@ -395,10 +405,15 @@ const styles = StyleSheet.create({
 		color: '#A64B62',
 		fontSize: 10,
 	},
+	signupRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginTop: 18,
+	},
 	signupText: {
 		color: '#63545B',
 		fontSize: 12,
-		marginTop: 18,
 	},
 	signupLink: {
 		color: '#B9254C',
