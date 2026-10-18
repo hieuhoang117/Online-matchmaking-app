@@ -2,7 +2,6 @@ import bcrypt from 'bcrypt';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import prisma from '../config/db.js';
 import { env } from '../config/env.js';
-import redis from '../config/redis.js';
 import { sendRegistrationOtp } from '../config/mailer.js';
 import { HttpError } from '../utils/httpError.js';
 import { AuthUser, Role, signAccessToken, generateRefreshToken, hashToken } from '../utils/jwt.js';
@@ -84,13 +83,17 @@ interface PendingRegistration {
   otpHash: string;
 }
 
+interface PendingRegistrationState {
+  pending: PendingRegistration;
+  attempts: number;
+  expiresAt: number;
+  resendAt: number;
+}
+
 const OTP_TTL_SECONDS = 5 * 60;
 const OTP_RESEND_SECONDS = 60;
 const MAX_OTP_ATTEMPTS = 5;
-
-const registrationOtpKey = (email: string) => `register:otp:${email}`;
-const registrationAttemptsKey = (email: string) => `register:otp:attempts:${email}`;
-const registrationCooldownKey = (email: string) => `register:otp:cooldown:${email}`;
+const pendingRegistrations = new Map<string, PendingRegistrationState>();
 
 const prepareRegistration = async (input: RegisterInput): Promise<PreparedRegistration> => {
   const email = input.email.trim().toLowerCase();
@@ -135,27 +138,28 @@ const createRegisteredUser = async (registration: PreparedRegistration) => {
 export const requestRegisterOtp = async (input: RegisterInput) => {
   const registration = await prepareRegistration(input);
   const email = registration.email;
-  const cooldownKey = registrationCooldownKey(email);
-  const cooldownSet = await redis.set(cooldownKey, '1', { NX: true, EX: OTP_RESEND_SECONDS });
-
-  if (cooldownSet !== 'OK') {
+  const now = Date.now();
+  const existing = pendingRegistrations.get(email);
+  if (existing && existing.resendAt > now) {
     throw new HttpError(429, 'Vui lòng chờ trước khi yêu cầu gửi lại OTP');
   }
 
   const otp = randomInt(100000, 1000000).toString();
-  const pending: PendingRegistration = {
-    registration,
-    otpHash: createHash('sha256').update(otp).digest('hex'),
+  const state: PendingRegistrationState = {
+    pending: {
+      registration,
+      otpHash: createHash('sha256').update(otp).digest('hex'),
+    },
+    attempts: 0,
+    expiresAt: now + OTP_TTL_SECONDS * 1000,
+    resendAt: now + OTP_RESEND_SECONDS * 1000,
   };
-  const otpKey = registrationOtpKey(email);
-  const attemptsKey = registrationAttemptsKey(email);
+  pendingRegistrations.set(email, state);
 
   try {
-    await redis.set(otpKey, JSON.stringify(pending), { EX: OTP_TTL_SECONDS });
-    await redis.set(attemptsKey, '0', { EX: OTP_TTL_SECONDS });
     await sendRegistrationOtp(email, otp);
   } catch (error) {
-    await Promise.all([redis.del(otpKey), redis.del(attemptsKey), redis.del(cooldownKey)]);
+    if (pendingRegistrations.get(email) === state) pendingRegistrations.delete(email);
     throw error;
   }
 
@@ -164,29 +168,27 @@ export const requestRegisterOtp = async (input: RegisterInput) => {
 
 export const verifyRegisterOtp = async (emailInput: string, otp: string) => {
   const email = emailInput.trim().toLowerCase();
-  const otpKey = registrationOtpKey(email);
-  const attemptsKey = registrationAttemptsKey(email);
-  const cooldownKey = registrationCooldownKey(email);
-  const pendingValue = await redis.get(otpKey);
-
-  if (!pendingValue) throw new HttpError(400, 'OTP không hợp lệ hoặc đã hết hạn');
+  const state = pendingRegistrations.get(email);
+  if (!state || state.expiresAt <= Date.now()) {
+    pendingRegistrations.delete(email);
+    throw new HttpError(400, 'OTP không hợp lệ hoặc đã hết hạn');
+  }
   if (!/^\d{6}$/.test(otp)) throw new HttpError(400, 'OTP phải gồm 6 chữ số');
 
-  const attempts = await redis.incr(attemptsKey);
-  if (attempts > MAX_OTP_ATTEMPTS) {
-    await Promise.all([redis.del(otpKey), redis.del(attemptsKey), redis.del(cooldownKey)]);
+  state.attempts++;
+  if (state.attempts > MAX_OTP_ATTEMPTS) {
+    pendingRegistrations.delete(email);
     throw new HttpError(429, 'Bạn đã nhập sai OTP quá số lần cho phép');
   }
 
-  const pending = JSON.parse(pendingValue) as PendingRegistration;
   const submittedHash = createHash('sha256').update(otp).digest();
-  const expectedHash = Buffer.from(pending.otpHash, 'hex');
+  const expectedHash = Buffer.from(state.pending.otpHash, 'hex');
   if (!timingSafeEqual(submittedHash, expectedHash)) {
     throw new HttpError(400, 'OTP không chính xác');
   }
 
-  await Promise.all([redis.del(otpKey), redis.del(attemptsKey), redis.del(cooldownKey)]);
-  return createRegisteredUser(pending.registration);
+  pendingRegistrations.delete(email);
+  return createRegisteredUser(state.pending.registration);
 };
 
 // ---------- Đăng nhập ----------
