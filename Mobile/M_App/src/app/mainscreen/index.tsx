@@ -1,5 +1,6 @@
 import { View, Text, Button, Pressable } from "react-native"
 import { useAuth } from '../../context/authContext';
+import MenuMain from '../../component/menuMain';
 import { useRouter } from 'expo-router';
 
 export default function mainscreen() {
@@ -16,6 +17,7 @@ export default function mainscreen() {
                 style={{ margin: 100, alignSelf: "center" }}>
                 <Text>dang xuat</Text>
             </Pressable>
+            <MenuMain activeKey="discover" />
         </View>
     )
 }
