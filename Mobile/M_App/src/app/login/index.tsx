@@ -115,7 +115,11 @@ export default function LoginScreen() {
 
 							{errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-							<Pressable accessibilityRole="button" style={styles.forgotButton}>
+							<Pressable
+								accessibilityRole="button"
+								style={styles.forgotButton}
+								onPress={() => router.push('/login/forgotpassword')}
+							>
 								<Text style={styles.forgotText}>Quên mật khẩu?</Text>
 							</Pressable>
 

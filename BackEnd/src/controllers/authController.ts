@@ -52,6 +52,20 @@ export const verifyRegisterOtp = async (req: Request, res: Response) => {
   }
 };
 
+export const checkEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body ?? {};
+    if (typeof email !== 'string') {
+      return res.status(400).json({ message: 'Thiếu email' });
+    }
+
+    const exists = await authService.checkEmailExists(email);
+    res.status(200).json({ exists });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
 export const requestPasswordResetOtp = async (req: Request, res: Response) => {
   try {
     const { email } = req.body ?? {};

@@ -221,6 +221,19 @@ export const verifyRegisterOtp = async (emailInput: string, otp: string) => {
   return createRegisteredUser(state.pending.registration);
 };
 
+export const checkEmailExists = async (emailInput: string) => {
+  const email = emailInput.trim().toLowerCase();
+  if (email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new HttpError(400, 'Email không hợp lệ');
+  }
+
+  const user = await prisma.users.findUnique({
+    where: { email },
+    select: { userId: true },
+  });
+  return Boolean(user);
+};
+
 export const requestPasswordResetOtp = async (emailInput: string) => {
   const email = emailInput.trim().toLowerCase();
   if (email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

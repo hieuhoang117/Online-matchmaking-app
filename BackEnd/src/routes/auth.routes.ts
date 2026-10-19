@@ -7,6 +7,7 @@ const router = Router();
 // Công khai
 router.post('/register', authController.register);
 router.post('/register/verify-otp', authController.verifyRegisterOtp);
+router.post('/check-email', authController.checkEmail);
 router.post('/forgot-password', authController.requestPasswordResetOtp);
 router.post('/forgot-password/verify-otp', authController.resetPassword);
 router.post('/login', authController.login);
