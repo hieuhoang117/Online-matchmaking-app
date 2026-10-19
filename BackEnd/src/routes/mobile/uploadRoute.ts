@@ -5,7 +5,7 @@ import { upload } from '../../middlewares/uploadMiddleware.js';
 
 const router = Router();
 
-router.post('/avatar', verifyToken, upload.single('avatar'), uploadAvatar,);
-router.delete('/avatar', verifyToken, deleteAvatar,);
+router.post('/avatars', verifyToken, upload.single('avatar'), uploadAvatar);
+router.delete('/avatars', verifyToken, deleteAvatar);
 
 export default router;

@@ -135,7 +135,7 @@ export default function RegisterScreen() {
         setErrorMessage('');
         setIsSubmitting(true);
         try {
-            await api.post('/auth/register', {
+            await api.post('/auth/registrations', {
                 username: normalizedUsername,
                 displayName: normalizedName,
                 email: normalizedEmail,
@@ -166,7 +166,7 @@ export default function RegisterScreen() {
         setOtpErrorMessage('');
         setIsVerifyingOtp(true);
         try {
-            await api.post('/auth/register/verify-otp', {
+            await api.post('/auth/registrations/otp-verifications', {
                 email: pendingEmail,
                 otp: normalizedOtp,
             });

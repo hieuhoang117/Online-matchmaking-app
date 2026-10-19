@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-          const response = await api.post<{ data: AuthTokens }>('/auth/refresh', {
+          const response = await api.post<{ data: AuthTokens }>('/auth/sessions/current/refreshes', {
             refreshToken: storedRefreshToken,
           });
           const tokens = response.data.data;
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
-    const response = await api.post<{ data: LoginResult }>('/auth/login', { email, password });
+    const response = await api.post<{ data: LoginResult }>('/auth/sessions', { email, password });
     const result = response.data.data;
 
     await Promise.all([
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
     if (refreshToken) {
-      await api.post('/auth/logout', { refreshToken }).catch(() => undefined);
+      await api.post('/auth/sessions/current/revocations', { refreshToken }).catch(() => undefined);
     }
 
     await Promise.allSettled([

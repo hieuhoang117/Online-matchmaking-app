@@ -57,7 +57,7 @@ export default function ForgotPasswordScreen() {
 		setEmailError('');
 		setCheckingEmail(true);
 		try {
-			const response = await api.post<{ exists: boolean }>('/auth/check-email', {
+			const response = await api.post<{ exists: boolean }>('/auth/email-availability', {
 				email: normalizedEmail,
 			});
 			if (!response.data.exists) {
@@ -81,7 +81,7 @@ export default function ForgotPasswordScreen() {
 		setNoticeMessage('');
 		setSendingOtp(true);
 		try {
-			await api.post('/auth/forgot-password', { email });
+			await api.post('/auth/password-resets', { email });
 			setNoticeMessage(`Mã OTP đã được gửi đến ${email}.`);
 		} catch (error) {
 			setErrorMessage(getErrorMessage(error));
@@ -108,7 +108,7 @@ export default function ForgotPasswordScreen() {
 		setNoticeMessage('');
 		setResettingPassword(true);
 		try {
-			await api.post('/auth/forgot-password/verify-otp', {
+			await api.post('/auth/password-resets/otp-verifications', {
 				email,
 				otp: otp.trim(),
 				newPassword,
