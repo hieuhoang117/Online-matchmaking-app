@@ -7,28 +7,28 @@ import api from '../service';
 const menuItems = [
 	{
 		key: 'discover',
-		label: 'Discover',
+		label: 'Khám phá',
 		icon: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
 		route: '',
 		showBadge: false,
 	},
 	{
 		key: 'chat',
-		label: 'Chat',
+		label: 'Trò chuyện',
 		icon: { ios: 'bubble.left', android: 'chat_bubble', web: 'chat_bubble' },
 		route: '',
 		showBadge: true,
 	},
 	{
 		key: 'activity',
-		label: 'Activity',
+		label: 'Thông báo',
 		icon: { ios: 'heart', android: 'favorite', web: 'favorite' },
 		route: '',
 		showBadge: true,
 	},
 	{
 		key: 'profile',
-		label: 'Profile',
+		label: 'Cá nhân',
 		icon: { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
 		route: '',
 		showBadge: false,
