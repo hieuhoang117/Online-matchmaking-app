@@ -1,5 +1,8 @@
 import { SymbolView } from 'expo-symbols';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../context/authContext';
+import api from '../service';
 
 const menuItems = [
 	{
@@ -38,7 +41,41 @@ type MenuMainProps = {
 	activeKey: MenuKey;
 };
 
+type Notification = {
+	isRead: boolean | null;
+};
+
 export default function MenuMain({ activeKey }: MenuMainProps) {
+	const { accessToken } = useAuth();
+	const [unreadCount, setUnreadCount] = useState(0);
+
+	const handleNotific = useCallback(async (token: string): Promise<number> => {
+		const response = await api.get<{ data: Notification[] }>('/notifications', {
+			headers: { Authorization: `Bearer ${token}` },
+		});
+
+		return response.data.data.filter((notification) => notification.isRead !== true).length;
+	}, []);
+
+	useEffect(() => {
+		if (!accessToken) {
+			setUnreadCount(0);
+			return;
+		}
+
+		let isActive = true;
+		void handleNotific(accessToken)
+			.then((count) => {
+				if (isActive) setUnreadCount(count);
+			})
+			.catch(() => {
+				if (isActive) setUnreadCount(0);
+			});
+
+		return () => {
+			isActive = false;
+		};
+	}, [accessToken, handleNotific]);
 
 	return (
 		<View style={styles.menu}>
@@ -49,7 +86,9 @@ export default function MenuMain({ activeKey }: MenuMainProps) {
 					<Pressable
 						key={item.key}
 						accessibilityRole="button"
-						accessibilityLabel={item.label}
+						accessibilityLabel={item.key === 'activity' && unreadCount > 0
+							? `${item.label}, ${unreadCount} thông báo chưa đọc`
+							: item.label}
 						accessibilityState={{ selected: isActive }}
 						style={styles.menuItem}
 					>
@@ -59,7 +98,15 @@ export default function MenuMain({ activeKey }: MenuMainProps) {
 								size={20}
 								tintColor={isActive ? '#D9435F' : '#806F74'}
 							/>
-							{item.showBadge ? <View style={styles.badge} /> : null}
+							{item.key === 'activity' ? (
+								unreadCount > 0 ? (
+									<View style={styles.unreadBadge}>
+										<Text style={styles.unreadBadgeText}>
+											{unreadCount > 99 ? '99+' : unreadCount}
+										</Text>
+									</View>
+								) : null
+							) : item.showBadge ? <View style={styles.badge} /> : null}
 						</View>
 						<Text style={[styles.label, isActive && styles.activeLabel]}>{item.label}</Text>
 					</Pressable>
@@ -100,6 +147,24 @@ const styles = StyleSheet.create({
 		height: 7,
 		borderRadius: 4,
 		backgroundColor: '#F35B78',
+	},
+	unreadBadge: {
+		position: 'absolute',
+		top: -4,
+		right: -9,
+		minWidth: 16,
+		height: 16,
+		paddingHorizontal: 4,
+		borderRadius: 8,
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: '#F35B78',
+	},
+	unreadBadgeText: {
+		color: '#FFFFFF',
+		fontSize: 9,
+		fontWeight: '700',
+		lineHeight: 12,
 	},
 	label: {
 		color: '#806F74',
