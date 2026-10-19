@@ -70,11 +70,11 @@ export default function LoginScreen() {
 								</View>
 							</View>
 							<Text style={styles.brandName}>Amour <Text style={styles.brandEmoji}>♥</Text></Text>
-							<Text style={styles.tagline}>Find your love</Text>
+							<Text style={styles.tagline}>Tìm thấy tình yêu của bạn</Text>
 						</View>
 
 						<View style={styles.form}>
-							<Text style={styles.fieldLabel}>Email Address</Text>
+							<Text style={styles.fieldLabel}>Địa chỉ email</Text>
 							<View style={styles.inputWrap}>
 								<Text style={styles.inputIcon}>@</Text>
 								<TextInput
@@ -90,13 +90,13 @@ export default function LoginScreen() {
 							</View>
 
 							<View style={styles.passwordHeading}>
-								<Text style={styles.fieldLabel}>Password</Text>
+								<Text style={styles.fieldLabel}>Mật khẩu</Text>
 							</View>
 							<View style={styles.inputWrap}>
 								<Text style={styles.inputIcon}>▣</Text>
 								<TextInput
 									style={styles.input}
-									placeholder="Enter your password"
+									placeholder="Nhập mật khẩu"
 									placeholderTextColor="#B9A8B0"
 									secureTextEntry={!showPassword}
 									autoCapitalize="none"
@@ -105,7 +105,7 @@ export default function LoginScreen() {
 								/>
 								<Pressable
 									accessibilityRole="button"
-									accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+									accessibilityLabel={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
 									onPress={() => setShowPassword((current) => !current)}
 									style={styles.eyeButton}
 								>
@@ -116,13 +116,13 @@ export default function LoginScreen() {
 							{errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
 							<Pressable accessibilityRole="button" style={styles.forgotButton}>
-								<Text style={styles.forgotText}>Forgot Password?</Text>
+								<Text style={styles.forgotText}>Quên mật khẩu?</Text>
 							</Pressable>
 
 							<Pressable accessibilityRole="button" style={styles.loginButton}
 								onPress={handleLogin}
 								disabled={isLoading}>
-								<Text style={styles.loginButtonText}>{isLoading ? 'Signing in...' : 'Log In'}</Text>
+								<Text style={styles.loginButtonText}>{isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</Text>
 								<Text style={styles.loginHeart}>♡</Text>
 							</Pressable>
 
@@ -131,17 +131,17 @@ export default function LoginScreen() {
 						<View style={styles.bottomContent}>
 							<View style={styles.matchBadge}>
 								<Text style={styles.matchSparkles}>✦ ♥ ✦</Text>
-								<Text style={styles.matchText}>Over 2.4M singles matching today</Text>
+								<Text style={styles.matchText}>Hơn 2,4 triệu người độc thân đang tìm kiếm hôm nay</Text>
 							</View>
 
 							<View style={styles.signupRow}>
-								<Text style={styles.signupText}>Don&apos;t have an account?</Text>
+								<Text style={styles.signupText}>Bạn chưa có tài khoản?</Text>
 								<Pressable
 									accessibilityRole="button"
-									accessibilityLabel="Sign up"
+									accessibilityLabel="Đăng ký"
 									onPress={() => router.replace('/login/register')}
 								>
-									<Text style={styles.signupLink}>Sign up</Text>
+									<Text style={styles.signupLink}>Đăng ký</Text>
 								</Pressable>
 							</View>
 

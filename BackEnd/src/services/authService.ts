@@ -67,12 +67,16 @@ const loadAccount = async (accountId: string, type: Role): Promise<AuthUser | nu
 
 // ---------- Đăng ký ----------
 export interface RegisterInput {
+  username: string;
+  displayName: string;
   email: string;
   password: string;
   dateOfBirth: string; // YYYY-MM-DD
 }
 
 interface PreparedRegistration {
+  username: string;
+  displayName: string;
   email: string;
   passwordHash: string;
   dateOfBirth: string;
@@ -96,9 +100,17 @@ const MAX_OTP_ATTEMPTS = 5;
 const pendingRegistrations = new Map<string, PendingRegistrationState>();
 
 const prepareRegistration = async (input: RegisterInput): Promise<PreparedRegistration> => {
+  const username = input.username.trim().toLowerCase();
+  const displayName = input.displayName.trim().replace(/\s+/g, ' ');
   const email = input.email.trim().toLowerCase();
   const dateOfBirth = input.dateOfBirth.trim();
 
+  if (!/^[a-z0-9_.]{3,30}$/.test(username)) {
+    throw new HttpError(400, 'Tên đăng nhập phải từ 3 đến 30 ký tự gồm chữ thường, số, dấu _ hoặc .');
+  }
+  if (!displayName || displayName.length > 50) {
+    throw new HttpError(400, 'Tên hiển thị phải từ 1 đến 50 ký tự');
+  }
   if (email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new HttpError(400, 'Email không hợp lệ');
   }
@@ -113,8 +125,14 @@ const prepareRegistration = async (input: RegisterInput): Promise<PreparedRegist
   if (existingEmail) {
     throw new HttpError(409, 'Email đã được sử dụng');
   }
+  const existingUsername = await prisma.users.findUnique({ where: { username } });
+  if (existingUsername) {
+    throw new HttpError(409, 'Tên đăng nhập đã được sử dụng');
+  }
 
   return {
+    username,
+    displayName,
     email,
     passwordHash: await bcrypt.hash(input.password, 10),
     dateOfBirth,
@@ -126,7 +144,11 @@ const createRegisteredUser = async (registration: PreparedRegistration) => {
     .create({ data: { userId: randomUUID(), ...registration } })
     .catch((error: unknown) => {
       if ((error as { code?: string }).code === 'P2002') {
-        throw new HttpError(409, 'Email đã được sử dụng');
+        const target = JSON.stringify((error as { meta?: unknown }).meta ?? '');
+        throw new HttpError(
+          409,
+          target.includes('username') ? 'Tên đăng nhập đã được sử dụng' : 'Email đã được sử dụng',
+        );
       }
       throw error;
     });

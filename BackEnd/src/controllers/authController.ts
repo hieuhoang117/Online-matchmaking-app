@@ -15,13 +15,19 @@ export const register = async (req: Request, res: Response) => {
   try {
     const b = req.body ?? {};
     if (
+      typeof b.username !== 'string' ||
+      typeof b.displayName !== 'string' ||
       typeof b.email !== 'string' ||
       typeof b.password !== 'string' ||
       typeof b.dateOfBirth !== 'string'
     ) {
-      return res.status(400).json({ message: 'Thiếu email, mật khẩu hoặc ngày sinh' });
+      return res
+        .status(400)
+        .json({ message: 'Thiếu tên đăng nhập, tên hiển thị, email, mật khẩu hoặc ngày sinh' });
     }
     const data = await authService.requestRegisterOtp({
+      username: b.username,
+      displayName: b.displayName,
       email: b.email,
       password: b.password,
       dateOfBirth: b.dateOfBirth,

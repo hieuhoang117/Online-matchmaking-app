@@ -224,6 +224,46 @@ CREATE INDEX idx_messages_match_time ON messages (matchID, sentAt);
 DELIMITER ;
 USE dating_app_db;
 
+ALTER TABLE users 
+ADD COLUMN username VARCHAR(50) UNIQUE AFTER userId;
+UPDATE users 
+SET username = CASE userId
+    WHEN 'user-01' THEN 'nguyenvana'
+    WHEN 'user-02' THEN 'tranthib'
+    WHEN 'user-03' THEN 'levanc'
+    WHEN 'user-04' THEN 'phamthid'
+    WHEN 'user-05' THEN 'hoangvane'
+    WHEN 'user-06' THEN 'vuthif'
+    WHEN 'user-07' THEN 'buig'
+    WHEN 'user-08' THEN 'ngoch'
+    WHEN 'user-09' THEN 'dangvani'
+    WHEN 'user-10' THEN 'vuhoangk'
+    ELSE username -- Giữ nguyên giá trị cũ nếu không khớp
+END
+WHERE userId IN (
+    'user-01', 'user-02', 'user-03', 'user-04', 'user-05', 
+    'user-06', 'user-07', 'user-08', 'user-09', 'user-10'
+);ALTER TABLE users 
+ADD COLUMN displayName VARCHAR(50) AFTER username;
+UPDATE users 
+SET displayName = CASE userId
+    WHEN 'user-01' THEN 'Nguyễn Văn A'
+    WHEN 'user-02' THEN 'Trần Thị B'
+    WHEN 'user-03' THEN 'Lê Văn C'
+    WHEN 'user-04' THEN 'Phạm Thị D'
+    WHEN 'user-05' THEN 'Hoàng Văn E'
+    WHEN 'user-06' THEN 'Vũ Thị F'
+    WHEN 'user-07' THEN 'Bùi Gia G'
+    WHEN 'user-08' THEN 'Ngọc Hân'
+    WHEN 'user-09' THEN 'Đặng Văn I'
+    WHEN 'user-10' THEN 'Vũ Hoàng K'
+    ELSE displayName -- Giữ nguyên giá trị cũ nếu không khớp
+END
+WHERE userId IN (
+    'user-01', 'user-02', 'user-03', 'user-04', 'user-05', 
+    'user-06', 'user-07', 'user-08', 'user-09', 'user-10'
+);
+
 -- Tắt kiểm tra khóa ngoại tạm thời để dễ dàng chèn dữ liệu theo thứ tự mong muốn
 SET FOREIGN_KEY_CHECKS = 0;
 

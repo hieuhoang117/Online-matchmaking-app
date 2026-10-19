@@ -116,6 +116,8 @@ model user_interests {
 
 model users {
   userId                                String           @id @db.VarChar(36)
+  username                              String?          @unique(map: "username") @db.VarChar(50)
+  displayName                           String?          @db.VarChar(50)
   phoneNumber                           String?          @unique(map: "phoneNumber") @db.VarChar(20)
   email                                 String           @unique(map: "email") @db.VarChar(100)
   passwordHash                          String           @db.VarChar(255)

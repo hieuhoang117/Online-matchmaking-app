@@ -1,4 +1,5 @@
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
@@ -14,6 +15,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '../../service';
 
 const formatBirthDate = (date: Date) =>
     [date.getDate(), date.getMonth() + 1, date.getFullYear()]
@@ -43,6 +45,7 @@ const icons = {
     calendar: { ios: 'calendar', android: 'calendar_month', web: 'calendar_month' },
     lock: { ios: 'lock.fill', android: 'lock', web: 'lock' },
     hidden: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' },
+    visible: { ios: 'eye', android: 'visibility', web: 'visibility' },
     verified: { ios: 'checkmark.seal.fill', android: 'verified_user', web: 'verified_user' },
     arrow: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
 } as const;
@@ -54,6 +57,20 @@ export default function RegisterScreen() {
     const [birthDate, setBirthDate] = useState<Date | null>(null);
     const [pickerDate, setPickerDate] = useState(maximumBirthDate);
     const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+    const [username, setUsername] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [pendingEmail, setPendingEmail] = useState('');
+    const [otp, setOtp] = useState('');
+    const [isOtpModalVisible, setOtpModalVisible] = useState(false);
+    const [otpErrorMessage, setOtpErrorMessage] = useState('');
+    const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
     const openBirthDatePicker = () => {
         setPickerDate(birthDate ?? maximumBirthDate);
@@ -73,6 +90,96 @@ export default function RegisterScreen() {
 
     const handleDateDismiss = () => {
         setDatePickerVisible(false);
+    };
+
+    const handleRegister = async () => {
+        const normalizedUsername = username.trim().toLowerCase();
+        const normalizedName = fullName.trim();
+        const normalizedEmail = email.trim().toLowerCase();
+
+        if (!/^[a-z0-9_.]{3,30}$/.test(normalizedUsername)) {
+            setErrorMessage('Tên đăng nhập phải từ 3 đến 30 ký tự gồm chữ thường, số, dấu _ hoặc .');
+            return;
+        }
+        if (!normalizedName) {
+            setErrorMessage('Vui lòng nhập tên hiển thị.');
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setErrorMessage('Vui lòng nhập địa chỉ email hợp lệ.');
+            return;
+        }
+        if (!birthDate) {
+            setErrorMessage('Vui lòng chọn ngày sinh.');
+            return;
+        }
+        if (birthDate > maximumBirthDate) {
+            setErrorMessage('Bạn phải đủ 18 tuổi để đăng ký.');
+            return;
+        }
+        if (password.length < 8) {
+            setErrorMessage('Mật khẩu phải có ít nhất 8 ký tự.');
+            return;
+        }
+        if (password !== confirmPassword) {
+            setErrorMessage('Mật khẩu xác nhận không khớp.');
+            return;
+        }
+
+        const dateOfBirth = [
+            birthDate.getFullYear(),
+            String(birthDate.getMonth() + 1).padStart(2, '0'),
+            String(birthDate.getDate()).padStart(2, '0'),
+        ].join('-');
+
+        setErrorMessage('');
+        setIsSubmitting(true);
+        try {
+            await api.post('/auth/register', {
+                username: normalizedUsername,
+                displayName: normalizedName,
+                email: normalizedEmail,
+                password,
+                dateOfBirth,
+            });
+            setPendingEmail(normalizedEmail);
+            setOtp('');
+            setOtpErrorMessage('');
+            setOtpModalVisible(true);
+        } catch (error) {
+            const message = axios.isAxiosError<{ message?: string }>(error)
+                ? error.response?.data?.message ?? 'Không thể kết nối tới máy chủ.'
+                : 'Đã xảy ra lỗi. Vui lòng thử lại.';
+            setErrorMessage(message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        const normalizedOtp = otp.trim();
+        if (!/^\d{6}$/.test(normalizedOtp)) {
+            setOtpErrorMessage('Vui lòng nhập mã OTP gồm 6 chữ số.');
+            return;
+        }
+
+        setOtpErrorMessage('');
+        setIsVerifyingOtp(true);
+        try {
+            await api.post('/auth/register/verify-otp', {
+                email: pendingEmail,
+                otp: normalizedOtp,
+            });
+            setOtpModalVisible(false);
+            router.replace('/login');
+        } catch (error) {
+            const message = axios.isAxiosError<{ message?: string }>(error)
+                ? error.response?.data?.message ?? 'Không thể kết nối tới máy chủ.'
+                : 'Đã xảy ra lỗi. Vui lòng thử lại.';
+            setOtpErrorMessage(message);
+        } finally {
+            setIsVerifyingOtp(false);
+        }
     };
 
     return (
@@ -118,7 +225,24 @@ export default function RegisterScreen() {
 
                         <View style={styles.formCard}>
                             <View style={styles.field}>
-                                <Text style={styles.fieldLabel}>Họ và tên</Text>
+                                <Text style={styles.fieldLabel}>Tên đăng nhập</Text>
+                                <View style={styles.inputWrap}>
+                                    <SymbolView name={icons.person} size={19} tintColor="#90757E" style={styles.inputSymbol} />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Ví dụ: minhanh_01"
+                                        placeholderTextColor="#AA969C"
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                        returnKeyType="next"
+                                        value={username}
+                                        onChangeText={setUsername}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.field}>
+                                <Text style={styles.fieldLabel}>Tên hiển thị</Text>
                                 <View style={styles.inputWrap}>
                                     <SymbolView name={icons.person} size={19} tintColor="#90757E" style={styles.inputSymbol} />
                                     <TextInput
@@ -127,6 +251,8 @@ export default function RegisterScreen() {
                                         placeholderTextColor="#AA969C"
                                         autoCapitalize="words"
                                         returnKeyType="next"
+                                        value={fullName}
+                                        onChangeText={setFullName}
                                     />
                                 </View>
                             </View>
@@ -143,6 +269,8 @@ export default function RegisterScreen() {
                                         autoCapitalize="none"
                                         autoCorrect={false}
                                         returnKeyType="next"
+                                        value={email}
+                                        onChangeText={setEmail}
                                     />
                                 </View>
                             </View>
@@ -220,6 +348,46 @@ export default function RegisterScreen() {
                                 </Modal>
                             )}
 
+                            <Modal
+                                transparent
+                                animationType="fade"
+                                visible={isOtpModalVisible}
+                                onRequestClose={() => setOtpModalVisible(false)}
+                            >
+                                <View style={styles.otpModalBackdrop}>
+                                    <View style={styles.otpModalCard}>
+                                        <Text style={styles.otpModalTitle}>Xác nhận email</Text>
+                                        <Text style={styles.otpModalDescription}>
+                                            Nhập mã OTP đã gửi đến {pendingEmail}
+                                        </Text>
+                                        <TextInput
+                                            style={styles.otpInput}
+                                            placeholder="Nhập mã OTP"
+                                            placeholderTextColor="#AA969C"
+                                            keyboardType="number-pad"
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                            maxLength={6}
+                                            value={otp}
+                                            onChangeText={setOtp}
+                                        />
+                                        {otpErrorMessage ? (
+                                            <Text style={styles.otpErrorText}>{otpErrorMessage}</Text>
+                                        ) : null}
+                                        <Pressable
+                                            accessibilityRole="button"
+                                            style={styles.otpConfirmButton}
+                                            onPress={handleVerifyOtp}
+                                            disabled={isVerifyingOtp}
+                                        >
+                                            <Text style={styles.otpConfirmButtonText}>
+                                                {isVerifyingOtp ? 'Đang xác nhận...' : 'Xác nhận'}
+                                            </Text>
+                                        </Pressable>
+                                    </View>
+                                </View>
+                            </Modal>
+
                             <View style={styles.field}>
                                 <Text style={styles.fieldLabel}>Mật khẩu</Text>
                                 <View style={styles.inputWrap}>
@@ -228,11 +396,24 @@ export default function RegisterScreen() {
                                         style={styles.input}
                                         placeholder="Tạo mật khẩu (tối thiểu 8 ký tự)"
                                         placeholderTextColor="#AA969C"
-                                        secureTextEntry
+                                        secureTextEntry={!showPassword}
                                         autoCapitalize="none"
                                         returnKeyType="next"
+                                        value={password}
+                                        onChangeText={setPassword}
                                     />
-                                    <SymbolView name={icons.hidden} size={20} tintColor="#9B838B" style={styles.trailingSymbol} />
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                                        onPress={() => setShowPassword((current) => !current)}
+                                        style={styles.passwordToggle}
+                                    >
+                                        <SymbolView
+                                            name={showPassword ? icons.visible : icons.hidden}
+                                            size={20}
+                                            tintColor="#9B838B"
+                                        />
+                                    </Pressable>
                                 </View>
                             </View>
 
@@ -244,11 +425,24 @@ export default function RegisterScreen() {
                                         style={styles.input}
                                         placeholder="Nhập lại mật khẩu"
                                         placeholderTextColor="#AA969C"
-                                        secureTextEntry
+                                        secureTextEntry={!showConfirmPassword}
                                         autoCapitalize="none"
                                         returnKeyType="done"
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
                                     />
-                                    <SymbolView name={icons.hidden} size={20} tintColor="#9B838B" style={styles.trailingSymbol} />
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel={showConfirmPassword ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'}
+                                        onPress={() => setShowConfirmPassword((current) => !current)}
+                                        style={styles.passwordToggle}
+                                    >
+                                        <SymbolView
+                                            name={showConfirmPassword ? icons.visible : icons.hidden}
+                                            size={20}
+                                            tintColor="#9B838B"
+                                        />
+                                    </Pressable>
                                 </View>
                             </View>
 
@@ -264,10 +458,19 @@ export default function RegisterScreen() {
                                 </Text>
                             </View>
 
-                            <View style={styles.createButton}>
-                                <Text style={styles.createButtonText}>Tạo tài khoản</Text>
+                            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+                            <Pressable
+                                accessibilityRole="button"
+                                style={styles.createButton}
+                                onPress={handleRegister}
+                                disabled={isSubmitting}
+                            >
+                                <Text style={styles.createButtonText}>
+                                    {isSubmitting ? 'Đang gửi...' : 'Tạo tài khoản'}
+                                </Text>
                                 <SymbolView name={icons.arrow} size={21} tintColor="#FFFFFF" style={styles.createButtonArrow} />
-                            </View>
+                            </Pressable>
 
                         </View>
 
@@ -490,10 +693,74 @@ const styles = StyleSheet.create({
         height: 20,
         marginLeft: 8,
     },
+    passwordToggle: {
+        width: 32,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 4,
+    },
     modalBackdrop: {
         flex: 1,
         justifyContent: 'flex-end',
         backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    },
+    otpModalBackdrop: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    },
+    otpModalCard: {
+        width: '100%',
+        maxWidth: 380,
+        padding: 24,
+        borderRadius: 24,
+        backgroundColor: '#FFFFFF',
+    },
+    otpModalTitle: {
+        color: '#211C20',
+        fontSize: 20,
+        fontWeight: '700',
+        textAlign: 'center',
+    },
+    otpModalDescription: {
+        color: '#664B53',
+        fontSize: 13,
+        lineHeight: 20,
+        marginTop: 8,
+        marginBottom: 18,
+        textAlign: 'center',
+    },
+    otpInput: {
+        minHeight: 52,
+        paddingHorizontal: 16,
+        borderRadius: 14,
+        backgroundColor: '#F5F2FA',
+        color: '#382F34',
+        fontSize: 18,
+        letterSpacing: 6,
+        textAlign: 'center',
+    },
+    otpErrorText: {
+        color: '#B9254C',
+        fontSize: 12,
+        marginTop: 8,
+        textAlign: 'center',
+    },
+    otpConfirmButton: {
+        minHeight: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 18,
+        borderRadius: 25,
+        backgroundColor: '#B31D46',
+    },
+    otpConfirmButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
     },
     datePickerCard: {
         paddingBottom: 20,
@@ -550,6 +817,12 @@ const styles = StyleSheet.create({
     termsLink: {
         color: '#B91F49',
         fontWeight: '600',
+    },
+    errorText: {
+        color: '#B9254C',
+        fontSize: 12,
+        marginBottom: 12,
+        marginHorizontal: 4,
     },
     createButton: {
         minHeight: 54,
