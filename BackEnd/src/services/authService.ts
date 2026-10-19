@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import prisma from '../config/db.js';
 import { env } from '../config/env.js';
-import { sendRegistrationOtp } from '../config/mailer.js';
+import { sendPasswordResetOtp, sendRegistrationOtp } from '../config/mailer.js';
 import { HttpError } from '../utils/httpError.js';
 import { AuthUser, Role, signAccessToken, generateRefreshToken, hashToken } from '../utils/jwt.js';
 
@@ -98,6 +98,14 @@ const OTP_TTL_SECONDS = 5 * 60;
 const OTP_RESEND_SECONDS = 60;
 const MAX_OTP_ATTEMPTS = 5;
 const pendingRegistrations = new Map<string, PendingRegistrationState>();
+interface PasswordResetOtpState {
+  otpHash: string;
+  attempts: number;
+  expiresAt: number;
+  resendAt: number;
+}
+
+const pendingPasswordResets = new Map<string, PasswordResetOtpState>();
 
 const prepareRegistration = async (input: RegisterInput): Promise<PreparedRegistration> => {
   const username = input.username.trim().toLowerCase();
@@ -211,6 +219,83 @@ export const verifyRegisterOtp = async (emailInput: string, otp: string) => {
 
   pendingRegistrations.delete(email);
   return createRegisteredUser(state.pending.registration);
+};
+
+export const requestPasswordResetOtp = async (emailInput: string) => {
+  const email = emailInput.trim().toLowerCase();
+  if (email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new HttpError(400, 'Email không hợp lệ');
+  }
+
+  const user = await prisma.users.findUnique({ where: { email } });
+  if (!user) throw new HttpError(404, 'Email chưa được đăng ký');
+
+  const now = Date.now();
+  const existing = pendingPasswordResets.get(email);
+  if (existing && existing.resendAt > now) {
+    throw new HttpError(429, 'Vui lòng chờ trước khi yêu cầu gửi lại OTP');
+  }
+
+  const otp = randomInt(100000, 1000000).toString();
+  const state: PasswordResetOtpState = {
+    otpHash: createHash('sha256').update(otp).digest('hex'),
+    attempts: 0,
+    expiresAt: now + OTP_TTL_SECONDS * 1000,
+    resendAt: now + OTP_RESEND_SECONDS * 1000,
+  };
+  pendingPasswordResets.set(email, state);
+
+  try {
+    await sendPasswordResetOtp(email, otp);
+  } catch (error) {
+    if (pendingPasswordResets.get(email) === state) pendingPasswordResets.delete(email);
+    throw error;
+  }
+};
+
+export const resetPassword = async (emailInput: string, otp: string, newPassword: string) => {
+  const email = emailInput.trim().toLowerCase();
+  if (!/^\d{6}$/.test(otp)) throw new HttpError(400, 'OTP phải gồm 6 chữ số');
+  if (newPassword.length < MIN_PASSWORD || newPassword.length > MAX_PASSWORD) {
+    throw new HttpError(400, `Mật khẩu phải từ ${MIN_PASSWORD} đến ${MAX_PASSWORD} ký tự`);
+  }
+
+  const state = pendingPasswordResets.get(email);
+  if (!state || state.expiresAt <= Date.now()) {
+    pendingPasswordResets.delete(email);
+    throw new HttpError(400, 'OTP không hợp lệ hoặc đã hết hạn');
+  }
+
+  state.attempts++;
+  if (state.attempts > MAX_OTP_ATTEMPTS) {
+    pendingPasswordResets.delete(email);
+    throw new HttpError(429, 'Bạn đã nhập sai OTP quá số lần cho phép');
+  }
+
+  const submittedHash = createHash('sha256').update(otp).digest();
+  const expectedHash = Buffer.from(state.otpHash, 'hex');
+  if (!timingSafeEqual(submittedHash, expectedHash)) {
+    throw new HttpError(400, 'OTP không chính xác');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const user = await prisma.users.findUnique({ where: { email } });
+  if (!user) {
+    pendingPasswordResets.delete(email);
+    throw new HttpError(404, 'Email chưa được đăng ký');
+  }
+
+  await prisma.$transaction([
+    prisma.users.update({
+      where: { userId: user.userId },
+      data: { passwordHash },
+    }),
+    prisma.refresh_tokens.updateMany({
+      where: { accountId: user.userId, accountType: 'user', revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
+  pendingPasswordResets.delete(email);
 };
 
 // ---------- Đăng nhập ----------

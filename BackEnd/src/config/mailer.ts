@@ -25,3 +25,17 @@ export const sendRegistrationOtp = async (to: string, code: string): Promise<voi
     text: `Mã OTP của bạn là ${code}. Mã có hiệu lực trong 5 phút.`,
   });
 };
+
+export const sendPasswordResetOtp = async (to: string, code: string): Promise<void> => {
+  const from = process.env.EMAIL_USER;
+  if (!process.env.SMTP_HOST || !from || !process.env.EMAIL_PASS) {
+    throw new Error('Cấu hình SMTP chưa đầy đủ');
+  }
+
+  await mailer.sendMail({
+    from,
+    to,
+    subject: 'Mã OTP đặt lại mật khẩu',
+    text: `Mã OTP đặt lại mật khẩu của bạn là ${code}. Mã có hiệu lực trong 5 phút.`,
+  });
+};

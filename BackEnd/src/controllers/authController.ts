@@ -52,6 +52,36 @@ export const verifyRegisterOtp = async (req: Request, res: Response) => {
   }
 };
 
+export const requestPasswordResetOtp = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body ?? {};
+    if (typeof email !== 'string') {
+      return res.status(400).json({ message: 'Thiếu email' });
+    }
+    await authService.requestPasswordResetOtp(email);
+    res.status(200).json({ message: 'Đã gửi OTP đặt lại mật khẩu đến email' });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, otp, newPassword } = req.body ?? {};
+    if (
+      typeof email !== 'string' ||
+      typeof otp !== 'string' ||
+      typeof newPassword !== 'string'
+    ) {
+      return res.status(400).json({ message: 'Thiếu email, OTP hoặc mật khẩu mới' });
+    }
+    await authService.resetPassword(email, otp, newPassword);
+    res.status(200).json({ message: 'Đặt lại mật khẩu thành công' });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body ?? {};
