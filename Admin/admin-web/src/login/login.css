@@ -1,0 +1,520 @@
+.login-page {
+	--ink: #111827;
+	--blue: #0757c9;
+	display: grid;
+	grid-template-columns: minmax(390px, 46%) minmax(0, 1fr);
+	min-height: 100vh;
+	color: var(--ink);
+	background: #fff;
+	font-family: 'Aptos', 'Segoe UI', sans-serif;
+}
+
+.brand-panel {
+	position: relative;
+	isolation: isolate;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	min-height: 100vh;
+	padding: 42px clamp(30px, 4.4vw, 68px) 38px;
+	overflow: hidden;
+	color: #f8fbff;
+	background: linear-gradient(145deg, #0d3153 0%, #0a2745 60%, #0a233c 100%);
+}
+
+.brand-panel::before,
+.brand-panel::after {
+	position: absolute;
+	z-index: -1;
+	content: '';
+	pointer-events: none;
+}
+
+.brand-panel::before {
+	top: 44px;
+	left: -180px;
+	width: 520px;
+	height: 520px;
+	border: 1px solid rgb(132 177 218 / 13%);
+	border-radius: 50%;
+	box-shadow: 0 0 0 68px rgb(132 177 218 / 4%), 0 0 0 136px rgb(132 177 218 / 4%);
+}
+
+.brand-panel::after {
+	right: -30px;
+	bottom: 24%;
+	width: 160px;
+	height: 160px;
+	border: 1px solid rgb(132 177 218 / 12%);
+	transform: rotate(32deg);
+}
+
+.brand-content,
+.system-status {
+	position: relative;
+}
+
+.brand-lockup {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+}
+
+.brand-mark {
+	display: grid;
+	width: 30px;
+	height: 30px;
+	place-items: center;
+	border-radius: 4px;
+	color: #fff;
+	background: #0871e8;
+	box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
+	font-size: 17px;
+}
+
+.brand-lockup strong,
+.brand-lockup small {
+	display: block;
+}
+
+.brand-lockup strong {
+	font-size: 13px;
+	font-weight: 650;
+	line-height: 1.3;
+}
+
+.brand-lockup small {
+	margin-top: 3px;
+	color: #b8cce0;
+	font-family: 'Cascadia Code', Consolas, monospace;
+	font-size: 8px;
+	letter-spacing: 1.2px;
+}
+
+.brand-message {
+	max-width: 480px;
+	margin-top: clamp(52px, 9vh, 96px);
+}
+
+.version-tag.ant-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 16px;
+	padding: 4px 9px;
+	border: 1px solid rgb(187 211 235 / 18%);
+	border-radius: 2px;
+	color: #edf5ff;
+	background: rgb(53 97 139 / 35%);
+	font-size: 10px;
+}
+
+.status-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	flex: 0 0 6px;
+	border-radius: 50%;
+	background: #42dfab;
+}
+
+.brand-message .ant-typography {
+	color: #f8fbff;
+}
+
+.brand-message h1.ant-typography {
+	max-width: 460px;
+	margin: 0 0 12px;
+	font-size: 24px;
+	font-weight: 650;
+	line-height: 1.22;
+}
+
+.brand-message p.ant-typography {
+	max-width: 450px;
+	margin: 0;
+	color: #d0dceb;
+	font-size: 11px;
+	line-height: 1.65;
+}
+
+.feature-list {
+	display: grid;
+	gap: 8px;
+	margin: 34px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.feature-list li {
+	display: flex;
+	min-height: 35px;
+	align-items: center;
+	gap: 11px;
+	padding: 0 11px;
+	border: 1px solid rgb(188 211 235 / 5%);
+	border-radius: 3px;
+	color: #f2f6fb;
+	background: rgb(133 170 204 / 9%);
+	font-size: 10px;
+}
+
+.feature-list .anticon {
+	color: #d8e8fa;
+	font-size: 13px;
+}
+
+.system-status {
+	display: flex;
+	min-height: 48px;
+	align-items: end;
+	gap: 10px;
+	border-top: 1px solid rgb(207 225 242 / 14%);
+	color: #f0f5fa;
+	font-size: 9px;
+}
+
+.system-status > span:first-child {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.region-label {
+	color: #a5bbd0;
+}
+
+.compliance-label {
+	margin-left: auto;
+	color: #a5bbd0;
+	font-family: 'Cascadia Code', Consolas, monospace;
+	font-size: 8px;
+}
+
+.login-panel {
+	display: flex;
+	min-width: 0;
+	min-height: 100vh;
+	flex-direction: column;
+	align-items: center;
+	padding: 44px clamp(30px, 5vw, 78px) 32px;
+	background: #fff;
+}
+
+.topbar,
+.legal-footer {
+	display: flex;
+	width: min(100%, 660px);
+	align-items: center;
+}
+
+.topbar {
+	justify-content: space-between;
+	gap: 16px;
+	min-height: 26px;
+}
+
+.region-tag.ant-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	padding: 4px 8px;
+	border: 0;
+	border-radius: 2px;
+	color: #25344a;
+	background: #f1f2f4;
+	font-size: 9px;
+}
+
+.region-tag .anticon {
+	color: var(--blue);
+}
+
+.topbar-links {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: #202938;
+	font-size: 9px;
+	white-space: nowrap;
+}
+
+.topbar-links > span:not(.topbar-divider) {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.topbar-divider {
+	width: 1px;
+	height: 14px;
+	background: #d7dce3;
+}
+
+.login-content {
+	width: min(100%, 440px);
+	margin: auto 0;
+	padding: 42px 0;
+}
+
+.login-content h2.ant-typography {
+	margin: 0 0 5px;
+	color: #111;
+	font-size: 19px;
+	font-weight: 650;
+	line-height: 1.35;
+}
+
+.login-intro.ant-typography {
+	max-width: 400px;
+	margin: 0 0 22px;
+	color: #586174;
+	font-size: 11px;
+	line-height: 1.55;
+}
+
+.login-form .ant-form-item {
+	margin-bottom: 17px;
+}
+
+.login-form .ant-form-item-label {
+	padding-bottom: 5px;
+}
+
+.login-form .ant-form-item-label > label {
+	width: 100%;
+	height: auto;
+	color: #151922;
+	font-size: 10px;
+}
+
+.field-label {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.field-label > span:last-child:not(:first-child) {
+	color: #607087;
+	font-family: 'Cascadia Code', Consolas, monospace;
+	font-size: 8px;
+}
+
+.login-form .ant-input-affix-wrapper-lg {
+	min-height: 38px;
+	padding: 6px 10px;
+	border-color: #e2e6ec;
+	border-radius: 3px;
+	box-shadow: none;
+}
+
+.login-form .ant-input-affix-wrapper .ant-input-prefix,
+.login-form .ant-input-password-icon {
+	color: #67748a;
+}
+
+.login-form .ant-input {
+	color: #172033;
+	font-size: 11px;
+}
+
+.login-form .ant-input::placeholder {
+	color: #9aa3b1;
+}
+
+.forgot-link.ant-btn {
+	height: auto;
+	padding: 0;
+	color: var(--blue);
+	font-size: 9px;
+}
+
+.form-options {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0 0 18px;
+}
+
+.form-options .ant-checkbox-wrapper {
+	color: #263143;
+	font-size: 10px;
+}
+
+.form-options .ant-checkbox-inner {
+	width: 13px;
+	height: 13px;
+	border-radius: 2px;
+}
+
+.mfa-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	color: #23723b;
+	font-size: 9px;
+	white-space: nowrap;
+}
+
+.submit-button.ant-btn {
+	width: 100%;
+	height: 38px;
+	border-radius: 3px;
+	background: #0757c9;
+	box-shadow: none;
+	font-size: 11px;
+}
+
+.submit-button .anticon {
+	margin-left: 5px;
+}
+
+.signin-divider.ant-divider {
+	margin: 16px 0 13px;
+	color: #657086;
+	font-size: 9px;
+}
+
+.sso-button.ant-btn {
+	height: 36px;
+	border: 0;
+	border-radius: 3px;
+	background: #f5f3f2;
+	font-size: 10px;
+}
+
+.sso-button .anticon {
+	color: var(--blue);
+}
+
+.hardware-button.ant-btn {
+	display: flex;
+	width: 100%;
+	height: 36px;
+	justify-content: center;
+	color: #253044;
+	font-size: 9px;
+}
+
+.security-note {
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+	margin-top: 15px;
+	padding: 11px;
+	border-radius: 3px;
+	color: #556174;
+	background: #f5f4f3;
+	font-size: 9px;
+	line-height: 1.55;
+}
+
+.security-note .anticon {
+	margin-top: 1px;
+	color: #68788c;
+	font-size: 12px;
+}
+
+.legal-footer {
+	min-height: 50px;
+	flex-wrap: wrap;
+	gap: 4px;
+	border-top: 1px solid #e8e9ec;
+	color: #667085;
+	font-size: 9px;
+}
+
+.legal-footer .ant-btn-link {
+	height: auto;
+	padding: 0 2px;
+	color: #667085;
+	font-size: 9px;
+}
+
+@media (max-width: 900px) {
+	.login-page {
+		grid-template-columns: minmax(300px, 40%) minmax(0, 1fr);
+	}
+
+	.brand-panel {
+		padding-inline: 30px;
+	}
+
+	.login-panel {
+		padding-inline: 28px;
+	}
+
+	.compliance-label {
+		display: none;
+	}
+}
+
+@media (max-width: 680px) {
+	.login-page {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.brand-panel {
+		min-height: auto;
+		padding: 24px 24px 20px;
+	}
+
+	.brand-message {
+		margin-top: 30px;
+	}
+
+	.brand-message h1.ant-typography {
+		max-width: 520px;
+		font-size: 22px;
+	}
+
+	.feature-list {
+		gap: 6px;
+		margin-top: 18px;
+	}
+
+	.system-status {
+		min-height: 38px;
+		margin-top: 24px;
+	}
+
+	.login-panel {
+		min-height: 680px;
+		padding: 24px;
+	}
+
+	.login-content {
+		padding: 42px 0;
+	}
+}
+
+@media (max-width: 420px) {
+	.login-panel {
+		padding-inline: 20px;
+	}
+
+	.topbar {
+		align-items: flex-start;
+	}
+
+	.topbar-links {
+		gap: 7px;
+	}
+
+	.region-tag.ant-tag {
+		max-width: 170px;
+		white-space: normal;
+	}
+
+	.legal-footer {
+		gap: 3px;
+		font-size: 8px;
+	}
+
+	.legal-footer .ant-btn-link {
+		font-size: 8px;
+	}
+}
