@@ -1,22 +1,63 @@
 import { useState } from 'react'
 import {
 	ArrowRightOutlined,
-	CloudOutlined,
 	GlobalOutlined,
 	KeyOutlined,
 	LockOutlined,
 	MailOutlined,
 	QuestionCircleOutlined,
 	SafetyCertificateOutlined,
-	TeamOutlined,
 } from '@ant-design/icons'
-import { Button, Checkbox, Divider, Form, Input, Tag, Typography } from 'antd'
+import axios from 'axios'
+import { Button, Checkbox, Form, Input, message, Typography } from 'antd'
 import './login.css'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
+
+interface AdminLoginResponse {
+	data: {
+		accessToken: string
+		refreshToken: string
+	}
+}
 
 function Login() {
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
 	const [rememberDevice, setRememberDevice] = useState(true)
+	const [isLoading, setIsLoading] = useState(false)
+
+	const handlelogin = async () => {
+		if (!email.trim() || !password) {
+			message.error('Vui lòng nhập tên đăng nhập và mật khẩu')
+			return
+		}
+
+		setIsLoading(true)
+		try {
+			const response = await axios.post<AdminLoginResponse>(
+				`${API_BASE_URL}/auth/admins/sessions`,
+				{ username: email.trim(), password },
+			)
+
+			localStorage.removeItem('adminAccessToken')
+			localStorage.removeItem('adminRefreshToken')
+			sessionStorage.removeItem('adminAccessToken')
+			sessionStorage.removeItem('adminRefreshToken')
+			const tokenStorage = rememberDevice ? localStorage : sessionStorage
+			tokenStorage.setItem('adminAccessToken', response.data.data.accessToken)
+			tokenStorage.setItem('adminRefreshToken', response.data.data.refreshToken)
+			message.success('Đăng nhập admin thành công')
+		} catch (error) {
+			if (axios.isAxiosError<{ message?: string }>(error)) {
+				message.error(error.response?.data?.message ?? 'Không thể kết nối đến máy chủ')
+			} else {
+				message.error('Đã xảy ra lỗi, vui lòng thử lại')
+			}
+		} finally {
+			setIsLoading(false)
+		}
+	}
 
 	return (
 		<main className="login-page">
@@ -70,12 +111,12 @@ function Login() {
 
 					<Form layout="vertical" requiredMark={false} className="login-form" component="div">
 						<Form.Item
-							label={<span className="field-label">Email công việc hoặc mã quản trị</span>}
+							label={<span className="field-label">Tên đăng nhập hoặc mã quản trị</span>}
 						>
 							<Input
 								size="large"
 								prefix={<MailOutlined />}
-								placeholder="ten@congty.com hoặc mã quản trị"
+								placeholder="Tên đăng nhập hoặc mã quản trị"
 								value={email}
 								onChange={(event) => setEmail(event.target.value)}
 								autoComplete="username"
@@ -86,7 +127,6 @@ function Login() {
 							label={
 								<span className="field-label">
 									Mật khẩu
-									<Button type="link" className="forgot-link">Quên mật khẩu?</Button>
 								</span>
 							}
 						>
@@ -100,36 +140,34 @@ function Login() {
 							/>
 						</Form.Item>
 
-						<div className="form-options">
-							<Checkbox
-								checked={rememberDevice}
-								onChange={(event) => setRememberDevice(event.target.checked)}
-							>
-								Ghi nhớ thiết bị này trong 30 ngày
-							</Checkbox>
-						</div>
-
-						<Button type="primary" size="large" className="submit-button" htmlType="button">
+						<Button
+							type="primary"
+							size="large"
+							className="submit-button"
+							htmlType="button"
+							loading={isLoading}
+							onClick={handlelogin}
+						>
 							Đăng nhập vào bảng điều khiển <ArrowRightOutlined />
 						</Button>
 
 						<div className="security-note">
 							<SafetyCertificateOutlined />
 							<span>
-									Được bảo vệ bởi cổng truy cập zero-trust doanh nghiệp. Thông tin phiên,
-									địa chỉ IP máy khách và mã cấp quyền được ký mật mã và kiểm toán.
+								Được bảo vệ bởi cổng truy cập zero-trust doanh nghiệp. Thông tin phiên,
+								địa chỉ IP máy khách và mã cấp quyền được ký mật mã và kiểm toán.
 							</span>
 						</div>
 					</Form>
 				</div>
 
 				<footer className="legal-footer">
-						<span>© 2025 Apex Global Governance Inc.</span>
-						<Button type="link">Thông báo quyền riêng tư</Button>
+					<span>© 2025 Apex Global Governance Inc.</span>
+					<Button type="link">Thông báo quyền riêng tư</Button>
 					<span>•</span>
-						<Button type="link">Tiêu chuẩn bảo mật</Button>
+					<Button type="link">Tiêu chuẩn bảo mật</Button>
 					<span>•</span>
-						<Button type="link">Chấp thuận thu thập dữ liệu</Button>
+					<Button type="link">Chấp thuận thu thập dữ liệu</Button>
 				</footer>
 			</section>
 		</main>
