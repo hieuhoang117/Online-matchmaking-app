@@ -31,7 +31,6 @@ function Login() {
 					</div>
 
 					<div className="brand-message">
-						<Tag className="version-tag"><span className="status-dot" />Nền tảng bảo mật Amour v2.4</Tag>
 						<Typography.Title level={1}>
 							Kiến tạo niềm tin, an toàn và quản trị nền tảng.
 						</Typography.Title>
@@ -50,14 +49,12 @@ function Login() {
 
 				<footer className="system-status">
 					<span><i className="status-dot" />Trạng thái hệ thống: Đang hoạt động</span>
-					<span className="region-label">EU-Trung tâm</span>
 					<span className="compliance-label">SOC2 Type II · ISO 27001</span>
 				</footer>
 			</aside>
 
 			<section className="login-panel">
 				<header className="topbar">
-					<Tag className="region-tag"><CloudOutlined />Môi trường thật: FRA-01 (Frankfurt)</Tag>
 					<div className="topbar-links">
 						<span><GlobalOutlined /> VI-VN</span>
 						<span className="topbar-divider" />
@@ -73,7 +70,7 @@ function Login() {
 
 					<Form layout="vertical" requiredMark={false} className="login-form" component="div">
 						<Form.Item
-							label={<span className="field-label">Email công việc hoặc mã quản trị <span>SSO đang bật</span></span>}
+							label={<span className="field-label">Email công việc hoặc mã quản trị</span>}
 						>
 							<Input
 								size="large"
@@ -110,20 +107,10 @@ function Login() {
 							>
 								Ghi nhớ thiết bị này trong 30 ngày
 							</Checkbox>
-							<span className="mfa-status"><LockOutlined />MFA đang bật</span>
 						</div>
 
 						<Button type="primary" size="large" className="submit-button" htmlType="button">
 							Đăng nhập vào bảng điều khiển <ArrowRightOutlined />
-						</Button>
-
-						<Divider plain className="signin-divider">HOẶC ĐĂNG NHẬP BẰNG</Divider>
-
-						<Button className="sso-button" block icon={<KeyOutlined />}>
-							Đăng nhập một lần (Okta / Azure SAML)
-						</Button>
-						<Button type="text" className="hardware-button" icon={<TeamOutlined />}>
-							Xác thực bằng FIDO2 / khóa bảo mật phần cứng
 						</Button>
 
 						<div className="security-note">
