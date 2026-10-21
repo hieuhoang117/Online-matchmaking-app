@@ -3,6 +3,7 @@ import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
 import uploadRoutes from './routes/mobile/uploadRoute.js'
 import notificationRoutes from './routes/notification.routes.js';
+import profileRoutes from './routes/profile.routes.js';
 
 const app = express();
 
@@ -16,5 +17,6 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/profile', profileRoutes);
 
 export default app;
