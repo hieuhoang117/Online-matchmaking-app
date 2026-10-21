@@ -1,4 +1,5 @@
 import { SymbolView } from 'expo-symbols';
+import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../context/authContext';
@@ -9,28 +10,28 @@ const menuItems = [
 		key: 'discover',
 		label: 'Khám phá',
 		icon: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
-		route: '',
+		route: '/mainscreen',
 		showBadge: false,
 	},
 	{
 		key: 'chat',
 		label: 'Trò chuyện',
 		icon: { ios: 'bubble.left', android: 'chat_bubble', web: 'chat_bubble' },
-		route: '',
+		route: '/chat',
 		showBadge: true,
 	},
 	{
 		key: 'activity',
 		label: 'Thông báo',
 		icon: { ios: 'heart', android: 'favorite', web: 'favorite' },
-		route: '',
+		route: '/notification',
 		showBadge: true,
 	},
 	{
 		key: 'profile',
 		label: 'Cá nhân',
 		icon: { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
-		route: '',
+		route: '/profile',
 		showBadge: false,
 	},
 ] as const;
@@ -46,6 +47,7 @@ type Notification = {
 };
 
 export default function MenuMain({ activeKey }: MenuMainProps) {
+	const router = useRouter();
 	const { accessToken } = useAuth();
 	const [unreadCount, setUnreadCount] = useState(0);
 
@@ -91,6 +93,7 @@ export default function MenuMain({ activeKey }: MenuMainProps) {
 							: item.label}
 						accessibilityState={{ selected: isActive }}
 						style={styles.menuItem}
+						onPress={() => router.replace(item.route as Href)}
 					>
 						<View style={styles.iconWrap}>
 							<SymbolView
