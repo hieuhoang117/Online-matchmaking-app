@@ -1,28 +1,31 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 import MenuMain from '../../component/menuMain';
+import { useAuth } from '../../context/authContext';
+import api from '../../service';
 
-const profilePhoto = {
-	uri: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=500&q=85',
+type ProfilePhoto = {
+	photoID: string;
+	photoURL: string;
+	isAvatar: boolean | null;
 };
 
-const initialPhotos = [
-	{ id: 'main', uri: null, isMain: true },
-	{ id: 'cafe', uri: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=500&q=85', isMain: false },
-	{ id: 'city', uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=85', isMain: false },
-	{ id: 'sunset', uri: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=500&q=85', isMain: false },
-];
+type ProfileInterest = {
+	interestIS: string;
+	name: string;
+};
 
-const interests = [
-	{ label: 'Mê cà phê', icon: '☕' },
-	{ label: 'Phòng tranh', icon: '🎨' },
-	{ label: 'Yêu chó', icon: '🐶' },
-	{ label: 'Du lịch cuối tuần', icon: '✈️' },
-	{ label: 'Rượu vang tự nhiên', icon: '🍷' },
-	{ label: 'Padel & quần vợt', icon: '🎾' },
-	{ label: 'Tiểu thuyết hiện đại', icon: '📚' },
-];
+type UserProfile = {
+	userId: string;
+	username: string | null;
+	displayName: string | null;
+	dateOfBirth: string | null;
+	bio: string | null;
+	profilePhotos: ProfilePhoto[];
+	interests: ProfileInterest[];
+};
 
 const icons = {
 	heart: { ios: 'heart.fill', android: 'favorite', web: 'favorite' },
@@ -36,12 +39,66 @@ const icons = {
 	star: { ios: 'star.fill', android: 'star', web: 'star' },
 } as const;
 
-const name = 'Chloe';
-const job = 'Nhà thiết kế kiến trúc';
-const photos = initialPhotos;
-const visibleInterests = interests;
+const getAge = (dateOfBirth: string | null): number | null => {
+	if (!dateOfBirth || !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) return null;
+	const birthDate = new Date(`${dateOfBirth}T00:00:00Z`);
+	if (Number.isNaN(birthDate.getTime()) || birthDate.toISOString().slice(0, 10) !== dateOfBirth) return null;
+
+	const today = new Date();
+	let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+	if (
+		today.getUTCMonth() < birthDate.getUTCMonth() ||
+		(today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate())
+	) {
+		age--;
+	}
+	return age;
+};
 
 export default function ProfileScreen() {
+	const { accessToken } = useAuth();
+	const [profile, setProfile] = useState<UserProfile | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		let isActive = true;
+
+		if (!accessToken) {
+			setProfile(null);
+			setError('Vui lòng đăng nhập để xem hồ sơ.');
+			setIsLoading(false);
+			return () => {
+				isActive = false;
+			};
+		}
+
+		setIsLoading(true);
+		setError(null);
+		void api.get<{ data: UserProfile }>('/profile/me', {
+			headers: { Authorization: `Bearer ${accessToken}` },
+		})
+			.then((response) => {
+				if (isActive) setProfile(response.data.data);
+			})
+			.catch(() => {
+				if (isActive) setError('Không thể tải thông tin hồ sơ. Vui lòng thử lại sau.');
+			})
+			.finally(() => {
+				if (isActive) setIsLoading(false);
+			});
+
+		return () => {
+			isActive = false;
+		};
+	}, [accessToken]);
+
+	const photos = profile?.profilePhotos ?? [];
+	const interests = profile?.interests ?? [];
+	const avatarPhoto = photos.find((photo) => photo.isAvatar) ?? photos[0];
+	const displayName = profile?.displayName || profile?.username || 'Người dùng';
+	const age = getAge(profile?.dateOfBirth ?? null);
+
 	return (
 		<SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
 			<View style={styles.header}>
@@ -60,7 +117,13 @@ export default function ProfileScreen() {
 					>
 						<SymbolView name={icons.filters} size={22} tintColor="#60474E" />
 					</Pressable>
-					<Image source={profilePhoto} style={styles.headerAvatar} />
+					{avatarPhoto ? (
+						<Image source={{ uri: avatarPhoto.photoURL }} style={styles.headerAvatar} />
+					) : (
+						<View style={[styles.headerAvatar, styles.avatarPlaceholder]}>
+							<SymbolView name={icons.camera} size={18} tintColor="#806F74" />
+						</View>
+					)}
 				</View>
 			</View>
 
@@ -69,9 +132,26 @@ export default function ProfileScreen() {
 				contentContainerStyle={styles.content}
 				showsVerticalScrollIndicator={false}
 			>
+			{isLoading ? (
+				<View style={styles.profileState}>
+					<ActivityIndicator color="#B83257" />
+					<Text style={styles.profileStateText}>Đang tải hồ sơ...</Text>
+				</View>
+			) : error ? (
+				<View style={styles.profileState}>
+					<Text style={styles.profileStateText}>{error}</Text>
+				</View>
+			) : profile ? (
+			<>
 				<View style={styles.profileIntro}>
 					<View style={styles.avatarWrap}>
-						<Image source={profilePhoto} style={styles.profileAvatar} />
+						{avatarPhoto ? (
+							<Image source={{ uri: avatarPhoto.photoURL }} style={styles.profileAvatar} />
+						) : (
+							<View style={[styles.profileAvatar, styles.avatarPlaceholder]}>
+								<SymbolView name={icons.camera} size={32} tintColor="#9C9295" />
+							</View>
+						)}
 						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel="Thêm ảnh"
@@ -81,10 +161,10 @@ export default function ProfileScreen() {
 						</Pressable>
 					</View>
 					<View style={styles.nameRow}>
-						<Text style={styles.profileName}>{name}, 26</Text>
+						<Text style={styles.profileName}>{displayName}{age !== null ? `, ${age}` : ''}</Text>
 						<View style={styles.statusDot} />
 					</View>
-					<Text style={styles.profileDescription}>{job} • Luân Đôn, Anh</Text>
+					<Text style={styles.profileDescription}>{profile.bio || 'Chưa cập nhật giới thiệu'}</Text>
 
 					<View style={styles.profileActions}>
 						<Pressable style={[styles.actionButton, styles.editButton]}>
@@ -115,16 +195,9 @@ export default function ProfileScreen() {
 					</View>
 					<View style={styles.photoGrid}>
 						{photos.map((photo) => (
-							<View key={photo.id} style={styles.photoTile}>
-								{photo.uri ? (
-									<Image source={{ uri: photo.uri }} style={styles.photoImage} />
-								) : (
-									<View style={styles.mainPhotoPlaceholder}>
-										<SymbolView name={icons.camera} size={24} tintColor="#9C9295" />
-										<Text style={styles.placeholderText}>Ảnh chính</Text>
-									</View>
-								)}
-								{photo.isMain ? (
+							<View key={photo.photoID} style={styles.photoTile}>
+								<Image source={{ uri: photo.photoURL }} style={styles.photoImage} />
+								{photo.isAvatar ? (
 									<View style={styles.mainBadge}>
 										<SymbolView name={icons.star} size={12} tintColor="#B83257" />
 										<Text style={styles.mainBadgeText}>Chính</Text>
@@ -160,7 +233,7 @@ export default function ProfileScreen() {
 					<View style={styles.sectionHeading}>
 						<View style={styles.sectionTitleGroup}>
 							<Text style={styles.sectionTitle}>Sở thích</Text>
-							<Text style={styles.countPill}>{visibleInterests.length}</Text>
+										<Text style={styles.countPill}>{interests.length}</Text>
 						</View>
 						<Pressable accessibilityRole="button" style={styles.textAction}>
 							<SymbolView name={icons.pencil} size={16} tintColor="#B83257" />
@@ -168,10 +241,9 @@ export default function ProfileScreen() {
 						</Pressable>
 					</View>
 					<View style={styles.interestList}>
-						{visibleInterests.map((interest, index) => (
-							<View key={`${interest.label}-${index}`} style={styles.interestChip}>
-								<Text style={styles.interestEmoji}>{interest.icon}</Text>
-								<Text style={styles.interestText}>{interest.label}</Text>
+								{interests.map((interest) => (
+									<View key={interest.interestIS} style={styles.interestChip}>
+										<Text style={styles.interestText}>{interest.name}</Text>
 							</View>
 						))}
 						<Pressable accessibilityRole="button" style={styles.addInterestButton}>
@@ -180,6 +252,8 @@ export default function ProfileScreen() {
 						</Pressable>
 					</View>
 				</View>
+			</>
+			) : null}
 			</ScrollView>
 
 			<MenuMain activeKey="profile" />
@@ -240,8 +314,26 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 		borderColor: '#F7B5C5',
 	},
+	avatarPlaceholder: {
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: '#E8DDE1',
+	},
 	scrollView: {
 		flex: 1,
+	},
+	profileState: {
+		flex: 1,
+		minHeight: 240,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 12,
+		paddingHorizontal: 24,
+	},
+	profileStateText: {
+		color: '#806F74',
+		fontSize: 14,
+		textAlign: 'center',
 	},
 	content: {
 		paddingHorizontal: 18,
@@ -395,18 +487,6 @@ const styles = StyleSheet.create({
 		width: '100%',
 		height: '100%',
 	},
-	mainPhotoPlaceholder: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 8,
-		backgroundColor: '#D0CECF',
-	},
-	placeholderText: {
-		color: '#6E6568',
-		fontSize: 11,
-		fontWeight: '600',
-	},
 	mainBadge: {
 		position: 'absolute',
 		left: 7,
@@ -486,9 +566,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderRadius: 20,
 		backgroundColor: '#F7E1E7',
-	},
-	interestEmoji: {
-		fontSize: 13,
 	},
 	interestText: {
 		color: '#42363B',
