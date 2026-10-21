@@ -139,6 +139,14 @@ function Login() {
 								autoComplete="current-password"
 							/>
 						</Form.Item>
+						<div className="form-options">
+							<Checkbox
+								checked={rememberDevice}
+								onChange={(event) => setRememberDevice(event.target.checked)}
+							>
+								Ghi nhớ thiết bị này trong 30 ngày
+							</Checkbox>
+						</div>
 
 						<Button
 							type="primary"
