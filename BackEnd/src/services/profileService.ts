@@ -88,3 +88,14 @@ export const createInterest = async (name: string, category: string) => {
 
 	return interest;
 };
+
+ export const addUserInterest = async (userId: string, interestIS: string) => {
+ 	const userInterest = await prisma.user_interests.create({
+ 		data: {
+ 			userId,
+ 			interestIS,
+ 		},
+ 	});
+
+ 	return userInterest;
+ };

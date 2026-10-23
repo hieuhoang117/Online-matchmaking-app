@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '../middlewares/authMiddleware.js';
 import {
+	addUserInterest,
+	createInterest,
 	getInterestByCategory,
 	getUserProfileById,
 	updateUserProfile,
@@ -118,5 +120,33 @@ export const getInterestByCategoryController = async (req: Request, res: Respons
 		return res.status(200).json({ data: interests });
 	} catch {
 		return res.status(500).json({ message: 'Không thể lấy danh sách sở thích' });
+	}
+};
+
+export const createInterestController = async (req: Request, res: Response) => {
+	const { name, category } = req.body;
+	if (typeof name !== 'string' || typeof category !== 'string') {
+		return res.status(400).json({ message: 'Name và category phải là chuỗi' });
+	}
+
+	try {
+		const interest = await createInterest(name, category);
+		return res.status(201).json({ data: interest });
+	} catch {
+		return res.status(500).json({ message: 'Không thể tạo sở thích' });
+	}
+};
+
+export const addUserInterestController = async (req: AuthRequest, res: Response) => {
+	const { interestIS } = req.body;
+	if (typeof interestIS !== 'string') {
+		return res.status(400).json({ message: 'interestIS phải là chuỗi' });
+	}
+
+	try {
+		const userInterest = await addUserInterest(req.user!.id, interestIS);
+		return res.status(201).json({ data: userInterest });
+	} catch {
+		return res.status(500).json({ message: 'Không thể thêm sở thích cho người dùng' });
 	}
 };
