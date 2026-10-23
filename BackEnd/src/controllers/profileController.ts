@@ -1,6 +1,7 @@
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import type { AuthRequest } from '../middlewares/authMiddleware.js';
 import {
+	getInterestByCategory,
 	getUserProfileById,
 	updateUserProfile,
 	type UpdateUserProfileInput,
@@ -103,5 +104,19 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
 			}
 		}
 		return res.status(500).json({ message: 'Không thể cập nhật hồ sơ' });
+	}
+};
+
+export const getInterestByCategoryController = async (req: Request, res: Response) => {
+	const category = req.query.category;
+	if (typeof category !== 'string') {
+		return res.status(400).json({ message: 'Category phải là chuỗi' });
+	}
+
+	try {
+		const interests = await getInterestByCategory(category);
+		return res.status(200).json({ data: interests });
+	} catch {
+		return res.status(500).json({ message: 'Không thể lấy danh sách sở thích' });
 	}
 };

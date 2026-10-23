@@ -69,3 +69,22 @@ export const updateUserProfile = async (userId: string, data: UpdateUserProfileI
 
 	return getUserProfileById(userId);
 };
+
+export const getInterestByCategory = async (category: string) => {
+	const interests = await prisma.interests.findMany({
+		where: { category },
+	});
+
+	return interests;
+};
+
+export const createInterest = async (name: string, category: string) => {
+	const interest = await prisma.interests.create({
+		data: {
+			name,
+			category,
+		},
+	});
+
+	return interest;
+};

@@ -221,6 +221,9 @@ CREATE TABLE refresh_tokens (
 ALTER TABLE messages RENAME COLUMN messssageID TO messageID;
 CREATE INDEX idx_messages_match_time ON messages (matchID, sentAt);
 
+ALTER TABLE interests 
+ADD COLUMN category VARCHAR(50) NOT NULL DEFAULT 'Khác' AFTER name;
+
 DELIMITER ;
 USE dating_app_db;
 
@@ -460,4 +463,58 @@ INSERT INTO refresh_tokens (tokenId, accountId, accountType, tokenHash, expiresA
 ('token-10', 'admin-03', 'admin', '5811804f58c738e4a9e5264b9b9409b0b467ec74668f44d5cbf2fc321a50a6db', DATE_ADD(NOW(), INTERVAL 1 DAY), NULL, NOW());
 
 -- Bật lại kiểm tra khóa ngoại sau khi đã hoàn tất chèn dữ liệu
+
+UPDATE interests 
+SET category = CASE interestIS
+    WHEN 'int-01' THEN 'Du lịch'
+    WHEN 'int-02' THEN 'Âm nhạc'
+    WHEN 'int-03' THEN 'Giải trí'
+    WHEN 'int-04' THEN 'Giải trí'
+    WHEN 'int-05' THEN 'Ẩm thực'
+    WHEN 'int-06' THEN 'Thể thao'
+    WHEN 'int-07' THEN 'Nghệ thuật'
+    WHEN 'int-08' THEN 'Giải trí'
+    WHEN 'int-09' THEN 'Công nghệ'
+    WHEN 'int-10' THEN 'Ẩm thực'
+    ELSE category
+END
+WHERE interestIS IN (
+    'int-01', 'int-02', 'int-03', 'int-04', 'int-05', 
+    'int-06', 'int-07', 'int-08', 'int-09', 'int-10'
+);
+USE dating_app_db;
+
+-- 1. Thêm tự động sinh UUID cho bảng users
+ALTER TABLE users MODIFY COLUMN userId VARCHAR(36) DEFAULT (UUID());
+
+-- 2. Bảng profile_photos
+ALTER TABLE profile_photos MODIFY COLUMN photoID VARCHAR(36) DEFAULT (UUID());
+
+-- 3. Bảng swipes
+ALTER TABLE swipes MODIFY COLUMN swipeID VARCHAR(36) DEFAULT (UUID());
+
+-- 4. Bảng matches
+ALTER TABLE matches MODIFY COLUMN matchID VARCHAR(36) DEFAULT (UUID());
+
+-- 5. Bảng messages
+ALTER TABLE messages MODIFY COLUMN messageID VARCHAR(36) DEFAULT (UUID());
+
+-- 6. Bảng reports
+ALTER TABLE reports MODIFY COLUMN reportID VARCHAR(36) DEFAULT (UUID());
+
+-- 7. Bảng blocks
+ALTER TABLE blocks MODIFY COLUMN blockID VARCHAR(36) DEFAULT (UUID());
+
+-- 8. Bảng interests
+ALTER TABLE interests MODIFY COLUMN interestIS VARCHAR(36) DEFAULT (UUID());
+
+-- 9. Bảng admins
+ALTER TABLE admins MODIFY COLUMN adminID VARCHAR(36) DEFAULT (UUID());
+
+-- 10. Bảng notifications
+ALTER TABLE notifications MODIFY COLUMN notificationID VARCHAR(36) DEFAULT (UUID());
+
+-- 11. Bảng refresh_tokens
+ALTER TABLE refresh_tokens MODIFY COLUMN tokenId VARCHAR(36) DEFAULT (UUID());
+
 SET FOREIGN_KEY_CHECKS = 1;

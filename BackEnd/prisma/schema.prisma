@@ -7,7 +7,7 @@ datasource db {
 }
 
 model admins {
-  adminID      String  @id @db.VarChar(36)
+  adminID      String  @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   username     String  @unique(map: "username") @db.VarChar(50)
   passwordHash String  @db.VarChar(255)
   role         String? @default("admin") @db.VarChar(50)
@@ -15,7 +15,7 @@ model admins {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model blocks {
-  blockID                       String  @id @db.VarChar(36)
+  blockID                       String  @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   blockerID                     String  @db.VarChar(36)
   blockedID                     String  @db.VarChar(36)
   createdAt                     String? @db.VarChar(50)
@@ -27,13 +27,14 @@ model blocks {
 }
 
 model interests {
-  interestIS     String           @id @db.VarChar(36)
+  interestIS     String           @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   name           String           @db.VarChar(100)
+  category       String           @default("Khác") @db.VarChar(50)
   user_interests user_interests[]
 }
 
 model matches {
-  matchID                      String     @id @db.VarChar(36)
+  matchID                      String     @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   user1ID                      String     @db.VarChar(36)
   user2ID                      String     @db.VarChar(36)
   matchedAt                    DateTime?  @default(now()) @db.DateTime(0)
@@ -46,7 +47,7 @@ model matches {
 }
 
 model messages {
-  messageID String    @id @db.VarChar(36)
+  messageID String    @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   matchID   String    @db.VarChar(36)
   senderID  String    @db.VarChar(36)
   content   String    @db.Text
@@ -59,7 +60,7 @@ model messages {
 }
 
 model notifications {
-  notificationID String   @id @db.VarChar(36)
+  notificationID String   @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   recipientID    String   @db.VarChar(36)
   title          String   @db.VarChar(150)
   content        String   @db.Text
@@ -68,7 +69,7 @@ model notifications {
 }
 
 model profile_photos {
-  photoID  String   @id @db.VarChar(36)
+  photoID  String   @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   userId   String   @db.VarChar(36)
   photoURL String   @db.VarChar(255)
   isAvatar Boolean? @default(false)
@@ -78,7 +79,7 @@ model profile_photos {
 }
 
 model reports {
-  reportID                            String    @id @db.VarChar(36)
+  reportID                            String    @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   reporterID                          String    @db.VarChar(36)
   reportedUserID                      String    @db.VarChar(36)
   reason                              String    @db.Text
@@ -92,7 +93,7 @@ model reports {
 }
 
 model swipes {
-  swipeID                          String    @id @db.VarChar(36)
+  swipeID                          String    @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   sourceUserId                     String    @db.VarChar(36)
   targetUserId                     String    @db.VarChar(36)
   actionType                       String    @db.VarChar(20)
@@ -115,7 +116,7 @@ model user_interests {
 }
 
 model users {
-  userId                                String           @id @db.VarChar(36)
+  userId                                String           @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   username                              String?          @unique(map: "username") @db.VarChar(50)
   displayName                           String?          @db.VarChar(50)
   phoneNumber                           String?          @unique(map: "phoneNumber") @db.VarChar(20)
@@ -140,7 +141,7 @@ model users {
 }
 
 model refresh_tokens {
-  tokenId     String                     @id @db.VarChar(36)
+  tokenId     String                     @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
   accountId   String                     @db.VarChar(36)
   accountType refresh_tokens_accountType
   tokenHash   String                     @unique(map: "tokenHash") @db.Char(64)
